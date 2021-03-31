@@ -1,14 +1,13 @@
 {
   "name": "polkadot-runtime-prom-exporter",
   "version": "1.0.0",
-  "description": "",
-  "main": "webpack.config.js",
+  "description": "Prometheus exporter for polkadot runtime metrics",
   "scripts": {
     "start:dev": "nodemon",
     "run": "npm run build && node build/index.js",
     "build": "rimraf ./build && tsc"
   },
-  "author": "",
+  "author": "@kianenigma",
   "license": "ISC",
   "devDependencies": {
     "@babel/cli": "^7.13.14",
