@@ -9,7 +9,8 @@
     "binary": "yarn run build && yarn run binary-mac && yarn run binary-linux",
     "binary-mac": "./node_modules/.bin/nexe build/index.js --build -t mac -o binaries/polkadot-runtime-prom-exporter-mac",
     "binary-linux": "./node_modules/.bin/nexe build/index.js --build -t linux -o binaries/polkadot-runtime-prom-exporter-linux",
-	"publish": "npm publish"
+	"publish": "npm publish",
+	"release": "gh release create v0.2.0 binaries/*-mac"
   },
   "author": "@kianenigma",
   "license": "ISC",
