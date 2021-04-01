@@ -1,6 +1,6 @@
 {
   "name": "polkadot-runtime-prom-exporter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Prometheus exporter for polkadot runtime metrics",
   "scripts": {
     "start:dev": "nodemon",
