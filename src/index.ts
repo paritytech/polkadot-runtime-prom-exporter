@@ -2,50 +2,46 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
+import { hostname } from "node:os";
 config();
 
-// TODO: this should be .env
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
 const PORT = process.env.PORT || 8080;
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
-	app: 'polkadot-runtime-metrics'
+	app: 'runtime-metrics'
 })
 
-const normalWeightMetric = new PromClient.Gauge({
-	name: "normal_weight_per_block",
-	help: "...",
+const finalizedHeadMetric = new PromClient.Gauge({
+	name: "chain_finalized_number",
+	help: "..."
 })
 
-const operationalWeightMetric = new PromClient.Gauge({
-	name: "operational_weight_per_block",
+const WeightMetric = new PromClient.Gauge({
+	name: "runtime_weight",
 	help: "...",
-})
-
-const mandatoryWeightMetric = new PromClient.Gauge({
-	name: "mandatory_weight_per_block",
-	help: "...",
+	labelNames: [ "class" ]
 })
 
 const timestampMetric = new PromClient.Gauge({
-	name: "block_timestamp",
+	name: "runtime_timestamp_seconds",
 	help: "...",
 })
 
 const blockLengthMetric = new PromClient.Gauge({
-	name: "block_length",
+	name: "runtime_block_length_bytes",
 	help: "...",
 })
 
 const numExtrinsicsMetric = new PromClient.Gauge({
-	name: "num_extrinsics",
+	name: "runtime_extrinsics_count",
 	help: "...",
+	labelNames: ["type"]
 })
 
-registry.registerMetric(normalWeightMetric);
-registry.registerMetric(operationalWeightMetric);
-registry.registerMetric(mandatoryWeightMetric);
+registry.registerMetric(finalizedHeadMetric);
+registry.registerMetric(WeightMetric);
 registry.registerMetric(timestampMetric);
 registry.registerMetric(blockLengthMetric);
 registry.registerMetric(numExtrinsicsMetric);
@@ -56,21 +52,27 @@ async function update() {
 
 	// only look into finalized blocks.
 	const _unsubscribe = await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
-		// todo: use promise.all()
-		const weight = await api.query.system.blockWeight();
-		const timestamp = await api.query.timestamp.now();
-		const block = (await api.rpc.chain.getBlock(header.hash)).block;
-		const numExtrinsics = block.extrinsics.length;
-		const blockLength = block.encodedLength;
+		let number = header.number;
+		const [weight, timestamp, signed_block] = await Promise.all([
+			api.query.system.blockWeight(),
+			api.query.timestamp.now(),
+			await api.rpc.chain.getBlock(header.hash)
+		]);
+		const blockLength = signed_block.block.encodedLength;
 
-		normalWeightMetric.set(weight.normal.toNumber());
-		operationalWeightMetric.set(weight.operational.toNumber());
-		mandatoryWeightMetric.set(weight.mandatory.toNumber());
-		timestampMetric.set(timestamp.toNumber());
+		finalizedHeadMetric.set(number.toNumber());
+		WeightMetric.set({ class: "normal" }, weight.normal.toNumber());
+		WeightMetric.set({ class: "operational" }, weight.operational.toNumber());
+		WeightMetric.set({ class: "mandatory" }, weight.mandatory.toNumber());
+		timestampMetric.set(timestamp.toNumber() / 1000);
 		blockLengthMetric.set(blockLength);
-		numExtrinsicsMetric.set(numExtrinsics);
 
-		console.log(`updated state according to #${header.number}`)
+		const signedLength = signed_block.block.extrinsics.filter((ext) => ext.isSigned).length
+		const unsignedLength = signed_block.block.extrinsics.length - signedLength;
+		numExtrinsicsMetric.set({ type: "singed" }, signedLength);
+		numExtrinsicsMetric.set({ type: "unsigned" }, unsignedLength);
+
+		console.log(`updated state according to #${number}`)
 	});
 }
 
@@ -106,8 +108,9 @@ const server = http.createServer(async (req, res) => {
 		`)
 	}
 })
-// Start the HTTP server which exposes the metrics on http://localhost:8080/metrics
-server.listen(PORT)
+
+// @ts-ignore
+server.listen(PORT, "0.0.0.0");
 console.log(`Server listening on port ${PORT}`)
 
 update().catch(console.error);
