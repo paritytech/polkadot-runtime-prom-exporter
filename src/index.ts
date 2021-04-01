@@ -15,28 +15,28 @@ registry.setDefaultLabels({
 
 const finalizedHeadMetric = new PromClient.Gauge({
 	name: "chain_finalized_number",
-	help: "..."
+	help: "finalized head of the chain."
 })
 
 const WeightMetric = new PromClient.Gauge({
 	name: "runtime_weight",
-	help: "...",
+	help: "weight of the block; labeled by dispatch class.",
 	labelNames: [ "class" ]
 })
 
 const timestampMetric = new PromClient.Gauge({
 	name: "runtime_timestamp_seconds",
-	help: "...",
+	help: "timestamp of the block.",
 })
 
 const blockLengthMetric = new PromClient.Gauge({
 	name: "runtime_block_length_bytes",
-	help: "...",
+	help: "encoded length of the block in bytes.",
 })
 
 const numExtrinsicsMetric = new PromClient.Gauge({
 	name: "runtime_extrinsics_count",
-	help: "...",
+	help: "number of extrinsics in the block, labeled by signature type.",
 	labelNames: ["type"]
 })
 
