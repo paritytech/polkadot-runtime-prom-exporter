@@ -4,7 +4,6 @@ import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
 import BN from "bn.js";
-import { privateEncrypt } from "crypto";
 config();
 
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
