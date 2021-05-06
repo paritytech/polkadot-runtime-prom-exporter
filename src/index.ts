@@ -228,6 +228,7 @@ async function update() {
 	const provider = new WsProvider(WS_PROVIDER);
 	const api = await ApiPromise.create( { provider });
 
+	// TODO: api.registry.chainDecimals
 	const decimalPoints =
 		(await api.rpc.system.chain()).toString().toLowerCase() == "polkadot" ?
 			new BN(Math.pow(10, 10)) :
@@ -237,7 +238,7 @@ async function update() {
 	api.decimalPoints = decimalPoints;
 
 	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), MINUTES * 1);
+	const _perHour = setInterval(() => perHour(api), HOURS * 1);
 
 	// update stuff daily
 	// const _perDay = setInterval(() => perDay(api), 3 * MINUTES / 2);
