@@ -9,6 +9,9 @@ config();
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
 const PORT = process.env.PORT || 8080;
 
+console.log(`+ WS_PROVIDER = ${WS_PROVIDER}`)
+console.log(`+ PORT = ${PORT}`)
+
 const SECONDS = 1000;
 const MINUTES = 60 * SECONDS;
 const HOURS = 60 * MINUTES;
@@ -282,4 +285,4 @@ const server = http.createServer(async (req, res) => {
 // @ts-ignore
 server.listen(PORT, "0.0.0.0");
 console.log(`Server listening on port ${PORT}`)
-update().catch(console.error);
+update().catch(console.error).finally(() => process.exit());
