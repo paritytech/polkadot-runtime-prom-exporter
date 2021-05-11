@@ -1,6 +1,6 @@
 {
 	"name": "polkadot-runtime-prom-exporter",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "Prometheus exporter for polkadot runtime metrics",
 	"scripts": {
 		"start:dev": "nodemon",
@@ -8,7 +8,6 @@
 		"build": "./node_modules/.bin/rimraf ./build && ./node_modules/.bin/tsc",
 		"binary": "yarn run build && rimraf ./binaries &&./node_modules/.bin/nexe build/index.js --build -o binaries/polkadot-runtime-prom-exporter",
 		"publish": "npm publish",
-		"release": "gh release create v0.4.1 binaries/*"
 	},
 	"author": "@kianenigma",
 	"license": "ISC",
