@@ -17,6 +17,10 @@ const MINUTES = 60 * SECONDS;
 const HOURS = 60 * MINUTES;
 const DAYS = 24 * HOURS;
 
+// TODO: histogram of calls
+// TODO: histogram of storage size per-pallet-prefix
+// TODO: total number of accounts
+
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
 	app: 'runtime-metrics'
@@ -246,7 +250,7 @@ async function update() {
 	// const _perDay = setInterval(() => perDay(api), 3 * MINUTES / 2);
 
 	// update stuff per block.
-	const _perBlock = api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
+	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
 }
 
 const server = http.createServer(async (req, res) => {
