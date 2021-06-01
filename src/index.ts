@@ -21,6 +21,8 @@ const DAYS = 24 * HOURS;
 // TODO: histogram of calls
 // TODO: histogram of storage size per-pallet-prefix
 // TODO: total number of accounts
+// WeightFeeMultiplier
+// BlockFullnessRatio
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
