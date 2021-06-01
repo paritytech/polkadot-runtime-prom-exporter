@@ -4,6 +4,7 @@ import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
 import BN from "bn.js";
+import { copyFileSync } from "fs";
 config();
 
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
@@ -243,6 +244,8 @@ async function update() {
 	// @ts-ignore
 	api.decimalPoints = decimalPoints;
 
+	console.log(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
+
 	// update stuff per hour
 	const _perHour = setInterval(() => perHour(api), HOURS * 1);
 
@@ -289,4 +292,5 @@ const server = http.createServer(async (req, res) => {
 // @ts-ignore
 server.listen(PORT, "0.0.0.0");
 console.log(`Server listening on port ${PORT}`)
-update().catch(console.error).finally(() => process.exit());
+
+update().then().catch(console.error);
