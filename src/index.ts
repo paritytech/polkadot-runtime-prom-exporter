@@ -21,8 +21,6 @@ const DAYS = 24 * HOURS;
 // TODO: histogram of calls
 // TODO: histogram of storage size per-pallet-prefix
 // TODO: total number of accounts
-// WeightFeeMultiplier
-// BlockFullnessRatio
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
@@ -91,10 +89,15 @@ const councilMetric = new PromClient.Gauge({
 	labelNames: ["entity"],
 })
 
-const multiPhaseSolution = new PromClient.Gauge({
+const multiPhaseSolutionMetric = new PromClient.Gauge({
 	name: "runtime_multi_phase_election_unsigned",
 	help: "Stats of the latest multi_phase submission, only unsigned.",
 	labelNames: ["measure"]
+})
+
+const weightMultiplierMetric = new PromClient.Gauge({
+	name: "runtime_weight_to_fee_multiplier",
+	help: "The weight to fee multiplier, in number."
 })
 
 registry.registerMetric(finalizedHeadMetric);
@@ -108,7 +111,8 @@ registry.registerMetric(validatorCountMetric);
 registry.registerMetric(stakeMetric);
 registry.registerMetric(ledgerMetric);
 registry.registerMetric(councilMetric);
-registry.registerMetric(multiPhaseSolution);
+registry.registerMetric(multiPhaseSolutionMetric);
+registry.registerMetric(weightMultiplierMetric);
 
 async function stakingHourly(api: ApiPromise) {
 	let currentEra = (await api.query.staking.currentEra()).unwrapOrDefault();
@@ -220,13 +224,16 @@ async function perBlock(api: ApiPromise, header: Header) {
 	let issuancesScaled = issuance.div(api.decimalPoints);
 	totalIssuanceMetric.set(issuancesScaled.toNumber())
 
+	let weightFeeMultiplier = await api.query.transactionPayment.nextFeeMultiplier()
+	weightMultiplierMetric.set(weightFeeMultiplier.toNumber())
+
 	// check if we had an election-provider solution in this block.
 	for (let ext of signed_block.block.extrinsics) {
 		if (ext.meta.name.toHuman().startsWith('submit_unsigned')) {
 			let length = ext.encodedLength;
 			let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber()
-			multiPhaseSolution.set({ 'measure': 'weight' }, weight);
-			multiPhaseSolution.set({ 'measure': 'length' }, length);
+			multiPhaseSolutionMetric.set({ 'measure': 'weight' }, weight);
+			multiPhaseSolutionMetric.set({ 'measure': 'length' }, length);
 		}
 	}
 
