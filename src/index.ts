@@ -21,6 +21,8 @@ const DAYS = 24 * HOURS;
 // TODO: histogram of calls
 // TODO: histogram of storage size per-pallet-prefix
 // TODO: total number of accounts
+// TODO: election snapshot size in megabytes 
+// TODO: election scores. 
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
