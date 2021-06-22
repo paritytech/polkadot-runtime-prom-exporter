@@ -95,6 +95,11 @@ const multiPhaseSolutionMetric = new PromClient.Gauge({
 	labelNames: ["measure"]
 })
 
+const multiPhaseSnapshotMetric = new PromClient.Gauge({
+	name: "runtime_multi_phase_election_snapshot",
+	help: "Size of the latest multi_phase election snapshot.",
+})
+
 const weightMultiplierMetric = new PromClient.Gauge({
 	name: "runtime_weight_to_fee_multiplier",
 	help: "The weight to fee multiplier, in number."
@@ -111,8 +116,8 @@ registry.registerMetric(validatorCountMetric);
 registry.registerMetric(stakeMetric);
 registry.registerMetric(ledgerMetric);
 registry.registerMetric(councilMetric);
-registry.registerMetric(multiPhaseSolutionMetric);
 registry.registerMetric(weightMultiplierMetric);
+registry.registerMetric(multiPhaseSolutionMetric);
 
 async function stakingHourly(api: ApiPromise) {
 	let currentEra = (await api.query.staking.currentEra()).unwrapOrDefault();
@@ -237,6 +242,13 @@ async function perBlock(api: ApiPromise, header: Header) {
 		}
 	}
 
+	// check if snapshot exists, and if so get its size
+	if ((await api.query.electionProviderMultiPhase.snapshotMetadata()).isSome) {
+		let key = api.query.electionProviderMultiPhase.snapshot.key;
+		let size = await api.rpc.state.getStorageSize(key);
+		multiPhaseSnapshotMetric.set(size.toNumber());
+	}
+
 	console.log(`updated metrics according to #${number}`)
 }
 
@@ -259,7 +271,7 @@ async function update() {
 	const _perHour = setInterval(() => perHour(api), HOURS * 1);
 
 	// update stuff daily
-	// const _perDay = setInterval(() => perDay(api), 3 * MINUTES / 2);
+	const _perDay = setInterval(() => perDay(api), DAYS * 1);
 
 	// update stuff per block.
 	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
