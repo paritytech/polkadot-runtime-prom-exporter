@@ -1,11 +1,9 @@
 name: Build and Publish container for new releases
 
 on:
-  # FIXME: debug
-  # release:
-  #   types:
-  #     - published
-  pull_request:
+  release:
+    types:
+      - published
 
 
 jobs:
@@ -24,7 +22,6 @@ jobs:
         dockerfiles: |
           ./Dockerfile
         build-args: |
-          VERSION=${{ github.event.release.tag_name }}
           VCS_REF=${{ github.ref }}
           BUILD_DATE=${{ github.event.release.published_at }}
 
