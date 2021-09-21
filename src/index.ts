@@ -246,7 +246,7 @@ async function perBlock(api: ApiPromise, header: Header) {
 
 	// check if snapshot exists, and if so get its size
 	if ((await api.query.electionProviderMultiPhase.snapshotMetadata()).isSome) {
-		let key = api.query.electionProviderMultiPhase.snapshot.key;
+		let key = api.query.electionProviderMultiPhase.snapshot.key();
 		let size = await api.rpc.state.getStorageSize(key);
 		multiPhaseSnapshotMetric.set(size.toNumber());
 	}
