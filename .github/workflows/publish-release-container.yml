@@ -1,10 +1,10 @@
 name: Build and Publish container for new releases
 
 on:
-  release:
-    types:
-      - published
-
+  # release:
+  #   types:
+  #     - published
+  pull_request:
 
 jobs:
   build:
@@ -24,18 +24,18 @@ jobs:
         build-args: |
           VCS_REF=${{ github.ref }}
           BUILD_DATE=${{ github.event.release.published_at }}
-          REGISTRY_PATH=docker.io/paritytech
+          REGISTRY_PATH="docker.io/paritytech"
 
-    - name:                       Push image to docker.io
-      id:                         push-to-dockerhub
-      uses:                       redhat-actions/push-to-registry@v2.1
-      with:
-        registry:                 docker.io/paritytech
-        image:                    polkadot-runtime-prom-exporter
-        tags:                     ${{ github.event.release.tag_name }} latest
-        username:                 ${{ secrets.DOCKERHUB_USERNAME }}
-        password:                 ${{ secrets.DOCKERHUB_TOKEN }}
+    # - name:                       Push image to docker.io
+    #   id:                         push-to-dockerhub
+    #   uses:                       redhat-actions/push-to-registry@v2.1
+    #   with:
+    #     registry:                 docker.io/paritytechs
+    #     image:                    polkadot-runtime-prom-exporter
+    #     tags:                     ${{ github.event.release.tag_name }} latest
+    #     username:                 ${{ secrets.DOCKERHUB_USERNAME }}
+    #     password:                 ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name:                       Check the image
-      run: |
-        echo "New image has been pushed to ${{ steps.push-to-dockerhub.outputs.registry-path }}"
+    # - name:                       Check the image
+    #   run: |
+    #     echo "New image has been pushed to ${{ steps.push-to-dockerhub.outputs.registry-path }}"
