@@ -28,7 +28,7 @@ jobs:
       id:                         push-to-dockerhub
       uses:                       redhat-actions/push-to-registry@v2.1
       with:
-        registry:                 docker.io/paritytechs
+        registry:                 docker.io/paritytech
         image:                    polkadot-runtime-prom-exporter
         tags:                     ${{ github.event.release.tag_name }} latest
         username:                 ${{ secrets.DOCKERHUB_USERNAME }}
