@@ -1,10 +1,8 @@
-FROM node:14
+FROM docker.io/library/node:14
 
 ARG VCS_REF=master
 ARG BUILD_DATE
 ARG REGISTRY_PATH=docker.io/paritytech
-
-FROM ${REGISTRY_PATH}/base-ci:latest
 
 # metadata
 LABEL io.parity.image.authors="devops-team@parity.io" \
