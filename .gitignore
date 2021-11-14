@@ -3,3 +3,4 @@ build
 data
 binaries
 .vscode
+.DS_Store

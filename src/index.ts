@@ -1,10 +1,30 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import { Header } from "@polkadot/types/interfaces";
+import { Header, SignedBlock } from "@polkadot/types/interfaces";
+import { StorageEntryMetadataV14 } from "@polkadot/types/interfaces";
 import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
 import BN from "bn.js";
+import { xxhashAsHex } from "@polkadot/util-crypto";
+import * as winston from 'winston'
 config();
+
+export const logger = winston.createLogger({
+	level: process.env.LOG_LEVEL || 'debug',
+	format: winston.format.combine(
+		winston.format.colorize(),
+		winston.format.colorize({
+		}),
+		winston.format.timestamp({
+			format: 'YY-MM-DD HH:MM:SS'
+		}),
+		winston.format.printf(
+			(info) => `[${info.timestamp}] ${info.level}: ${info.message}`
+		)
+	),
+	transports: [new winston.transports.Console()]
+})
+
 
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
 const PORT = process.env.PORT || 8080;
@@ -18,10 +38,7 @@ const HOURS = 60 * MINUTES;
 const DAYS = 24 * HOURS;
 
 // TODO: histogram of calls
-// TODO: histogram of storage size per-pallet-prefix
 // TODO: total number of accounts
-// TODO: election snapshot size in megabytes
-// TODO: election scores.
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
@@ -36,7 +53,7 @@ const finalizedHeadMetric = new PromClient.Gauge({
 const weightMetric = new PromClient.Gauge({
 	name: "runtime_weight",
 	help: "weight of the block; labeled by dispatch class.",
-	labelNames: [ "class" ]
+	labelNames: ["class"]
 })
 
 const timestampMetric = new PromClient.Gauge({
@@ -90,10 +107,27 @@ const councilMetric = new PromClient.Gauge({
 	labelNames: ["entity"],
 })
 
-const multiPhaseSolutionMetric = new PromClient.Gauge({
+const weightMultiplierMetric = new PromClient.Gauge({
+	name: "runtime_weight_to_fee_multiplier",
+	help: "The weight to fee multiplier, in number."
+})
+
+const multiPhaseUnsignedSolutionMetric = new PromClient.Gauge({
 	name: "runtime_multi_phase_election_unsigned",
-	help: "Stats of the latest multi_phase submission, only unsigned.",
+	help: "Stats of the latest unsigned multi_phase submission.",
 	labelNames: ["measure"]
+})
+
+const multiPhaseSignedSolutionMetric = new PromClient.Gauge({
+	name: "runtime_multi_phase_election_signed",
+	help: "Stats of the latest signed multi_phase submission.",
+	labelNames: ["measure"]
+})
+
+const multiPhaseQueuedSolutionScoreMetric = new PromClient.Gauge({
+	name: "runtime_multi_phase_election_scorre",
+	help: "The score of any queued solution.",
+	labelNames: ["score"]
 })
 
 const multiPhaseSnapshotMetric = new PromClient.Gauge({
@@ -101,67 +135,84 @@ const multiPhaseSnapshotMetric = new PromClient.Gauge({
 	help: "Size of the latest multi_phase election snapshot.",
 })
 
-const weightMultiplierMetric = new PromClient.Gauge({
-	name: "runtime_weight_to_fee_multiplier",
-	help: "The weight to fee multiplier, in number."
+const palletSizeMetric = new PromClient.Gauge({
+	name: "runtime_pallet_size",
+	help: "entire storage size of a pallet, in bytes.",
+	labelNames: ["pallet", "item"]
 })
 
+// misc
 registry.registerMetric(finalizedHeadMetric);
-registry.registerMetric(weightMetric);
 registry.registerMetric(timestampMetric);
+registry.registerMetric(weightMultiplierMetric);
+registry.registerMetric(councilMetric);
+registry.registerMetric(totalIssuanceMetric);
+
+// block
+registry.registerMetric(weightMetric);
 registry.registerMetric(blockLengthMetric);
 registry.registerMetric(numExtrinsicsMetric);
-registry.registerMetric(totalIssuanceMetric);
+
+// sttaking
 registry.registerMetric(nominatorCountMetric);
 registry.registerMetric(validatorCountMetric);
 registry.registerMetric(stakeMetric);
 registry.registerMetric(ledgerMetric);
-registry.registerMetric(councilMetric);
-registry.registerMetric(weightMultiplierMetric);
-registry.registerMetric(multiPhaseSolutionMetric);
+
+// elections
+registry.registerMetric(multiPhaseSignedSolutionMetric);
+registry.registerMetric(multiPhaseUnsignedSolutionMetric);
+registry.registerMetric(multiPhaseSnapshotMetric);
+registry.registerMetric(multiPhaseQueuedSolutionScoreMetric);
+
+// meta
+registry.registerMetric(palletSizeMetric);
 
 async function stakingHourly(api: ApiPromise) {
+	validatorCountMetric.set({ type: "candidate" }, (await api.query.staking.counterForValidators()).toNumber());
+	nominatorCountMetric.set({ type: "candidate" }, (await api.query.staking.counterForNominators()).toNumber());
+}
+
+async function stakingDaily(api: ApiPromise) {
+	logger.debug(`starting sttaking daily process.`);
 	let currentEra = (await api.query.staking.currentEra()).unwrapOrDefault();
-	let [validators, nominators, exposures] = await Promise.all([
-		api.query.staking.validators.entries(),
-		api.query.staking.nominators.entries(),
-		api.query.staking.erasStakers.entries(currentEra),
-	]);
+	let exposures = await api.query.staking.erasStakers.entries(currentEra);
 
-	validatorCountMetric.set({ type: "candidate" }, validators.length);
-	nominatorCountMetric.set({ type: "candidate" }, nominators.length);
+	logger.debug(`fetched ${exposures.length} exposurres`);
 
 	// @ts-ignore
-	let totalExposedNominators = exposures.map(([_, expo]) => expo.others.length).reduce((prev, next) => prev + next);
-	let totalExposedValidators = exposures.length;
-
+	let totalSelfStake = exposures.map(([_, expo]) => expo.own.toBn().div(decimals(api)).toNumber()).reduce((prev, next) => prev + next);
 	// @ts-ignore
-	let totalSelfStake = exposures.map(([_, expo]) => expo.own.toBn().div(api.decimalPoints).toNumber()).reduce((prev, next) => prev + next);
-	// @ts-ignore
-	let totalOtherStake = exposures.map(([_, expo]) => (expo.total.toBn().sub(expo.own.toBn())).div(api.decimalPoints).toNumber()).reduce((prev, next) => prev + next);
+	let totalOtherStake = exposures.map(([_, expo]) => (expo.total.toBn().sub(expo.own.toBn())).div(decimals(api)).toNumber()).reduce((prev, next) => prev + next);
 	let totalStake = totalOtherStake + totalSelfStake;
 
 	stakeMetric.set({ type: "self" }, totalSelfStake);
 	stakeMetric.set({ type: "other" }, totalOtherStake);
 	stakeMetric.set({ type: "all" }, totalStake);
 
+	let totalExposedNominators = exposures.map(([_, expo]) => expo.others.length).reduce((prev, next) => prev + next);
+	let totalExposedValidators = exposures.length;
+
 	validatorCountMetric.set({ type: "exposed" }, totalExposedValidators);
 	nominatorCountMetric.set({ type: "exposed" }, totalExposedNominators);
-}
 
-async function stakingDaily(api: ApiPromise) {
 	let ledgers = await api.query.staking.ledger.entries();
-	// @ts-ignore
-	let decimalPoints = api.decimalPoints;
+
+	logger.debug(`fetched ${ledgers.length} ledgers`);
 
 	let totalBondedAccounts = ledgers.length;
 	let totalBondedStake = ledgers.map(([_, ledger]) =>
-		ledger.unwrapOrDefault().total.toBn().div(decimalPoints).toNumber()
+		ledger.unwrapOrDefault().total.toBn().div(decimals(api)).toNumber()
 	).reduce((prev, next) => prev + next)
-	let totalUnbondingChunks = ledgers.map(([_, ledger]) =>
-		ledger.unwrapOrDefault().unlocking.map((unlocking) =>
-			unlocking.value.toBn().div(decimalPoints).toNumber()
-		).reduce((prev, next) => prev + next)
+	let totalUnbondingChunks = ledgers.map(([_, ledger]) => {
+		if (ledger.unwrapOrDefault().unlocking.length) {
+			return ledger.unwrapOrDefault().unlocking.map((unlocking) =>
+				unlocking.value.toBn().div(decimals(api)).toNumber()
+			).reduce((prev, next) => prev + next)
+		} else {
+			return 0
+		}
+	}
 	).reduce((prev, next) => prev + next)
 
 	ledgerMetric.set({ type: "bonded_accounts" }, totalBondedAccounts)
@@ -169,18 +220,55 @@ async function stakingDaily(api: ApiPromise) {
 	ledgerMetric.set({ type: "unbonding_stake" }, totalUnbondingChunks)
 }
 
+async function multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock) {
+	// check if we had an election-provider solution in this block.
+	for (let ext of signedBlock.block.extrinsics) {
+		if (ext.method.section.toLowerCase().includes("electionprovider") && ext.method.method === "submitUnsigned") {
+			let length = ext.encodedLength;
+			let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber();
+			logger.debug(`detected submitUnsigned`);
+			multiPhaseUnsignedSolutionMetric.set({ 'measure': 'weight' }, weight);
+			multiPhaseUnsignedSolutionMetric.set({ 'measure': 'length' }, length);
+		}
+
+		if (ext.method.section.toLowerCase().includes("electionprovider") && ext.method.method === "submit") {
+			let length = ext.encodedLength;
+			let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber()
+			logger.debug(`detected submit`);
+			multiPhaseUnsignedSolutionMetric.set({ 'measure': 'weight' }, weight);
+			multiPhaseUnsignedSolutionMetric.set({ 'measure': 'length' }, length);
+		}
+	}
+
+	// If this is the block at which signed phase has started:
+	let events = await api.query.system.events();
+	if (events.filter((ev) => ev.event.method === "SignedPhaseStarted").length > 0) {
+		let key = api.query.electionProviderMultiPhase.snapshot.key();
+		let size = await api.rpc.state.getStorageSize(key);
+		logger.debug(`detected SignedPhaseStarted: ${size.toHuman()}`)
+		multiPhaseSnapshotMetric.set(size.toNumber());
+	}
+
+	if (events.filter((ev) => ev.event.method === "SolutionStored").length > 0) {
+		let qeueued = await api.query.electionProviderMultiPhase.queuedSolution();
+		logger.debug(`detected SolutionStored: ${qeueued.unwrapOrDefault().toHuman()}`)
+		multiPhaseQueuedSolutionScoreMetric.set({ score: "x1" }, qeueued.unwrapOrDefault().score[0].div(decimals(api)).toNumber())
+		multiPhaseQueuedSolutionScoreMetric.set({ score: "x2" }, qeueued.unwrapOrDefault().score[1].div(decimals(api)).toNumber())
+	}
+}
+
 async function council(api: ApiPromise) {
 	if (api.query.electionsPhragmen) {
 		let [voters, candidates] = await Promise.all([
-			api.query.electionsPhragmen.voting.entries(),
+			api.query.electionsPhragmen.voting.keys(),
 			api.query.electionsPhragmen.candidates(),
 		]);
-		councilMetric.set( { entity: "voters" }, voters.length);
+		councilMetric.set({ entity: "voters" }, voters.length);
 		// @ts-ignore
-		councilMetric.set( { entity: "candidates" }, candidates.length);
+		councilMetric.set({ entity: "candidates" }, candidates.length);
 	} else if (api.query.phragmenElection) {
 		let [voters, candidates] = await Promise.all([
-			api.query.phragmenElection.voting.entries(),
+			api.query.phragmenElection.voting.keys(),
 			api.query.phragmenElection.candidates(),
 		]);
 		councilMetric.set({ entity: "voters" }, voters.length);
@@ -190,21 +278,21 @@ async function council(api: ApiPromise) {
 }
 
 async function perDay(api: ApiPromise) {
-	let stakingPromise = stakingDaily(api);
-	Promise.all([stakingPromise])
-	console.log(`updated daily metrics at ${new Date()}`)
+	logger.info(`starting daily scrape at ${new Date().toISOString()}`)
+	Promise.all([stakingDaily(api), palletStorageSize(api)])
 }
 
 async function perHour(api: ApiPromise) {
+	logger.info(`starting hourly scrape at ${new Date().toISOString()}`)
 	let stakingPromise = stakingHourly(api);
 	let councilPromise = council(api);
 
 	Promise.all([stakingPromise, councilPromise])
-	console.log(`updated hourly metrics at ${new Date()}`)
 }
 
 async function perBlock(api: ApiPromise, header: Header) {
 	let number = header.number;
+	logger.info(`starting block metric scrape at #${number}`)
 	const [weight, timestamp, signed_block] = await Promise.all([
 		api.query.system.blockWeight(),
 		api.query.timestamp.now(),
@@ -227,52 +315,45 @@ async function perBlock(api: ApiPromise, header: Header) {
 	// update issuance
 	let issuance = (await api.query.balances.totalIssuance()).toBn();
 	// @ts-ignore
-	let issuancesScaled = issuance.div(api.decimalPoints);
+	let issuancesScaled = issuance.div(decimals(api));
 	totalIssuanceMetric.set(issuancesScaled.toNumber())
 
 	let weightFeeMultiplier = await api.query.transactionPayment.nextFeeMultiplier()
 	weightMultiplierMetric.set(weightFeeMultiplier.toNumber())
 
-	// check if we had an election-provider solution in this block.
-	for (let ext of signed_block.block.extrinsics) {
-		if (ext.meta.name.toHuman().startsWith('submit_unsigned')) {
-			let length = ext.encodedLength;
-			let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber()
-			multiPhaseSolutionMetric.set({ 'measure': 'weight' }, weight);
-			multiPhaseSolutionMetric.set({ 'measure': 'length' }, length);
+	await multiPhasePerBlock(api, signed_block);
+}
+
+async function palletStorageSize(api: ApiPromise) {
+	for (let pallet of api.runtimeMetadata.asV14.pallets) {
+		const storage = pallet.storage.unwrapOrDefault();
+		const prefix = storage.prefix;
+		for (let item of storage.items) {
+			const x = xxhashAsHex(prefix.toString(), 128);
+			const y = xxhashAsHex(item.name.toString(), 128);
+			const key = `${x}${y.slice(2)}`;
+			const size = await api.rpc.state.getStorageSize(key);
+			logger.debug(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
+			palletSizeMetric.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
 		}
 	}
+}
 
-	// check if snapshot exists, and if so get its size
-	if ((await api.query.electionProviderMultiPhase.snapshotMetadata()).isSome) {
-		let key = api.query.electionProviderMultiPhase.snapshot.key();
-		let size = await api.rpc.state.getStorageSize(key);
-		multiPhaseSnapshotMetric.set(size.toNumber());
-	}
-
-	console.log(`updated metrics according to #${number}`)
+function decimals(api: ApiPromise): BN {
+	return new BN(Math.pow(10, api.registry.chainDecimals[0]))
 }
 
 async function update() {
 	const provider = new WsProvider(WS_PROVIDER);
-	const api = await ApiPromise.create( { provider });
+	const api = await ApiPromise.create({ provider });
 
-	// TODO: api.registry.chainDecimals
-	const decimalPoints =
-		(await api.rpc.system.chain()).toString().toLowerCase() == "polkadot" ?
-			new BN(Math.pow(10, 10)) :
-			new BN(Math.pow(10, 12));
-
-	// @ts-ignore
-	api.decimalPoints = decimalPoints;
-
-	console.log(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
+	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
 
 	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), HOURS * 1);
+	const _perHour = setInterval(() => perHour(api), MINUTES * 5);
 
 	// update stuff daily
-	const _perDay = setInterval(() => perDay(api), DAYS * 1);
+	const _perDay = setInterval(() => perDay(api), MINUTES * 10);
 
 	// update stuff per block.
 	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
