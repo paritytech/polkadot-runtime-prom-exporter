@@ -350,10 +350,10 @@ async function update() {
 	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
 
 	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), MINUTES * 5);
+	const _perHour = setInterval(() => perHour(api), HOURS);
 
 	// update stuff daily
-	const _perDay = setInterval(() => perDay(api), MINUTES * 10);
+	const _perDay = setInterval(() => perDay(api), DAYS);
 
 	// update stuff per block.
 	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
