@@ -227,8 +227,8 @@ async function multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock) {
 			let length = ext.encodedLength;
 			let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber();
 			logger.debug(`detected submitUnsigned`);
-			multiPhaseUnsignedSolutionMetric.set({ 'measure': 'weight' }, weight);
-			multiPhaseUnsignedSolutionMetric.set({ 'measure': 'length' }, length);
+			multiPhaseSignedSolutionMetric.set({ 'measure': 'weight' }, weight);
+			multiPhaseSignedSolutionMetric.set({ 'measure': 'length' }, length);
 		}
 
 		if (ext.method.section.toLowerCase().includes("electionprovider") && ext.method.method === "submit") {
@@ -242,14 +242,14 @@ async function multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock) {
 
 	// If this is the block at which signed phase has started:
 	let events = await api.query.system.events();
-	if (events.filter((ev) => ev.event.method === "SignedPhaseStarted").length > 0) {
+	if (events.filter((ev) => ev.event.method.toString() == "SignedPhaseStarted").length > 0) {
 		let key = api.query.electionProviderMultiPhase.snapshot.key();
 		let size = await api.rpc.state.getStorageSize(key);
 		logger.debug(`detected SignedPhaseStarted: ${size.toHuman()}`)
 		multiPhaseSnapshotMetric.set(size.toNumber());
 	}
 
-	if (events.filter((ev) => ev.event.method === "SolutionStored").length > 0) {
+	if (events.filter((ev) => ev.event.method.toString() == "SolutionStored").length > 0) {
 		let qeueued = await api.query.electionProviderMultiPhase.queuedSolution();
 		logger.debug(`detected SolutionStored: ${qeueued.unwrapOrDefault().toHuman()}`)
 		multiPhaseQueuedSolutionScoreMetric.set({ score: "x1" }, qeueued.unwrapOrDefault().score[0].div(decimals(api)).toNumber())
