@@ -3,7 +3,7 @@
 	"version": "0.8.0",
 	"description": "Prometheus exporter for polkadot runtime metrics",
 	"scripts": {
-		"start:dev": "nodemon",
+		"dev": "nodemon",
 		"run": "yarn run build && node build/index.js",
 		"build": "./node_modules/.bin/rimraf ./build && ./node_modules/.bin/tsc",
 		"binary": "yarn run build && rimraf ./binaries &&./node_modules/.bin/nexe build/index.js --build -o binaries/polkadot-runtime-prom-exporter",

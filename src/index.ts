@@ -4,7 +4,6 @@ import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
 import BN from "bn.js";
-import { copyFileSync } from "fs";
 config();
 
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
@@ -21,8 +20,8 @@ const DAYS = 24 * HOURS;
 // TODO: histogram of calls
 // TODO: histogram of storage size per-pallet-prefix
 // TODO: total number of accounts
-// TODO: election snapshot size in megabytes 
-// TODO: election scores. 
+// TODO: election snapshot size in megabytes
+// TODO: election scores.
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
