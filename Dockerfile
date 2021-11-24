@@ -1,4 +1,4 @@
-FROM docker.io/library/node:14
+FROM docker.io/library/node:16
 
 ARG VCS_REF=master
 ARG BUILD_DATE
