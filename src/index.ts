@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { Header, SignedBlock } from "@polkadot/types/interfaces";
-import { StorageEntryMetadataV14 } from "@polkadot/types/interfaces";
+import "@polkadot/api-augment";
 import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
