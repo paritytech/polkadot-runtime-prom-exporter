@@ -26,7 +26,7 @@ export const logger = winston.createLogger({
 })
 
 
-const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9944";
+const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9999";
 const PORT = process.env.PORT || 8080;
 
 console.log(`+ WS_PROVIDER = ${WS_PROVIDER}`)
@@ -39,6 +39,7 @@ const DAYS = 24 * HOURS;
 
 // TODO: histogram of calls
 // TODO: total number of accounts
+// TODO: bags-list: all nodes, active bags, need-rebag
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
@@ -125,7 +126,7 @@ const multiPhaseSignedSolutionMetric = new PromClient.Gauge({
 })
 
 const multiPhaseQueuedSolutionScoreMetric = new PromClient.Gauge({
-	name: "runtime_multi_phase_election_scorre",
+	name: "runtime_multi_phase_election_score",
 	help: "The score of any queued solution.",
 	labelNames: ["score"]
 })
@@ -169,20 +170,10 @@ registry.registerMetric(multiPhaseQueuedSolutionScoreMetric);
 registry.registerMetric(palletSizeMetric);
 
 async function stakingHourly(api: ApiPromise) {
-	validatorCountMetric.set({ type: "candidate" }, (await api.query.staking.counterForValidators()).toNumber());
-	nominatorCountMetric.set({ type: "candidate" }, (await api.query.staking.counterForNominators()).toNumber());
-}
-
-async function stakingDaily(api: ApiPromise) {
-	logger.debug(`starting sttaking daily process.`);
 	let currentEra = (await api.query.staking.currentEra()).unwrapOrDefault();
 	let exposures = await api.query.staking.erasStakers.entries(currentEra);
 
-	logger.debug(`fetched ${exposures.length} exposurres`);
-
-	// @ts-ignore
 	let totalSelfStake = exposures.map(([_, expo]) => expo.own.toBn().div(decimals(api)).toNumber()).reduce((prev, next) => prev + next);
-	// @ts-ignore
 	let totalOtherStake = exposures.map(([_, expo]) => (expo.total.toBn().sub(expo.own.toBn())).div(decimals(api)).toNumber()).reduce((prev, next) => prev + next);
 	let totalStake = totalOtherStake + totalSelfStake;
 
@@ -193,9 +184,12 @@ async function stakingDaily(api: ApiPromise) {
 	let totalExposedNominators = exposures.map(([_, expo]) => expo.others.length).reduce((prev, next) => prev + next);
 	let totalExposedValidators = exposures.length;
 
-	validatorCountMetric.set({ type: "exposed" }, totalExposedValidators);
-	nominatorCountMetric.set({ type: "exposed" }, totalExposedNominators);
+	validatorCountMetric.set({ type: "active" }, totalExposedValidators);
+	nominatorCountMetric.set({ type: "active" }, totalExposedNominators);
+}
 
+async function stakingDaily(api: ApiPromise) {
+	logger.debug(`starting staking daily process.`);
 	let ledgers = await api.query.staking.ledger.entries();
 
 	logger.debug(`fetched ${ledgers.length} ledgers`);
@@ -245,15 +239,15 @@ async function multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock) {
 	if (events.filter((ev) => ev.event.method.toString() == "SignedPhaseStarted").length > 0) {
 		let key = api.query.electionProviderMultiPhase.snapshot.key();
 		let size = await api.rpc.state.getStorageSize(key);
-		logger.debug(`detected SignedPhaseStarted: ${size.toHuman()}`)
+		logger.debug(`detected SignedPhaseStarted, snap size: ${size.toHuman()}`)
 		multiPhaseSnapshotMetric.set(size.toNumber());
 	}
 
 	if (events.filter((ev) => ev.event.method.toString() == "SolutionStored").length > 0) {
-		let qeueued = await api.query.electionProviderMultiPhase.queuedSolution();
-		logger.debug(`detected SolutionStored: ${qeueued.unwrapOrDefault().toHuman()}`)
-		multiPhaseQueuedSolutionScoreMetric.set({ score: "x1" }, qeueued.unwrapOrDefault().score[0].div(decimals(api)).toNumber())
-		multiPhaseQueuedSolutionScoreMetric.set({ score: "x2" }, qeueued.unwrapOrDefault().score[1].div(decimals(api)).toNumber())
+		let queued = await api.query.electionProviderMultiPhase.queuedSolution();
+		logger.debug(`detected SolutionStored: ${queued.unwrapOrDefault().toString()}`)
+		multiPhaseQueuedSolutionScoreMetric.set({ score: "x1" }, queued.unwrapOrDefault().score.minimalStake.div(decimals(api)).toNumber())
+		multiPhaseQueuedSolutionScoreMetric.set({ score: "x2" }, queued.unwrapOrDefault().score.sumStake.div(decimals(api)).toNumber())
 	}
 }
 
@@ -296,7 +290,7 @@ async function perBlock(api: ApiPromise, header: Header) {
 	const [weight, timestamp, signed_block] = await Promise.all([
 		api.query.system.blockWeight(),
 		api.query.timestamp.now(),
-		await api.rpc.chain.getBlock(header.hash)
+		api.rpc.chain.getBlock(header.hash)
 	]);
 	const blockLength = signed_block.block.encodedLength;
 
@@ -319,7 +313,10 @@ async function perBlock(api: ApiPromise, header: Header) {
 	totalIssuanceMetric.set(issuancesScaled.toNumber())
 
 	let weightFeeMultiplier = await api.query.transactionPayment.nextFeeMultiplier()
-	weightMultiplierMetric.set(weightFeeMultiplier.toNumber())
+	weightMultiplierMetric.set(weightFeeMultiplier.mul(new BN(100)).div(new BN(10).pow(new BN(18))).toNumber())
+
+	validatorCountMetric.set({ type: "intention" }, (await api.query.staking.counterForValidators()).toNumber());
+	nominatorCountMetric.set({ type: "intention" }, (await api.query.staking.counterForNominators()).toNumber());
 
 	await multiPhasePerBlock(api, signed_block);
 }
@@ -350,10 +347,10 @@ async function update() {
 	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
 
 	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), HOURS);
+	const _perHour = setInterval(() => perHour(api), 2 * MINUTES);
 
 	// update stuff daily
-	const _perDay = setInterval(() => perDay(api), DAYS);
+	const _perDay = setInterval(() => perDay(api), 3 * MINUTES);
 
 	// update stuff per block.
 	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
