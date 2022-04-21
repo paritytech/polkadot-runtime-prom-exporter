@@ -7,6 +7,7 @@ import { config } from "dotenv";
 import BN from "bn.js";
 import { xxhashAsHex } from "@polkadot/util-crypto";
 import * as winston from 'winston'
+
 config();
 
 export const logger = winston.createLogger({
@@ -102,12 +103,6 @@ const ledgerMetric = new PromClient.Gauge({
 	labelNames: ["type"],
 })
 
-const councilMetric = new PromClient.Gauge({
-	name: "runtime_council",
-	help: "Metrics of the council elections pallet.",
-	labelNames: ["entity"],
-})
-
 const weightMultiplierMetric = new PromClient.Gauge({
 	name: "runtime_weight_to_fee_multiplier",
 	help: "The weight to fee multiplier, in number."
@@ -142,11 +137,21 @@ const palletSizeMetric = new PromClient.Gauge({
 	labelNames: ["pallet", "item"]
 })
 
+const voterListBags = new PromClient.Gauge({
+	name: "runtime_voter_list_bags",
+	help: "number of voter list bags",
+	labelNames: ["active", "total"]
+})
+
+const voterListNodes = new PromClient.Gauge({
+	name: "runtime_voter_list_nodes",
+	help: "number of nodes in the voter list",
+})
+
 // misc
 registry.registerMetric(finalizedHeadMetric);
 registry.registerMetric(timestampMetric);
 registry.registerMetric(weightMultiplierMetric);
-registry.registerMetric(councilMetric);
 registry.registerMetric(totalIssuanceMetric);
 
 // block
@@ -154,7 +159,7 @@ registry.registerMetric(weightMetric);
 registry.registerMetric(blockLengthMetric);
 registry.registerMetric(numExtrinsicsMetric);
 
-// sttaking
+// staking
 registry.registerMetric(nominatorCountMetric);
 registry.registerMetric(validatorCountMetric);
 registry.registerMetric(stakeMetric);
@@ -251,26 +256,6 @@ async function multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock) {
 	}
 }
 
-async function council(api: ApiPromise) {
-	if (api.query.electionsPhragmen) {
-		let [voters, candidates] = await Promise.all([
-			api.query.electionsPhragmen.voting.keys(),
-			api.query.electionsPhragmen.candidates(),
-		]);
-		councilMetric.set({ entity: "voters" }, voters.length);
-		// @ts-ignore
-		councilMetric.set({ entity: "candidates" }, candidates.length);
-	} else if (api.query.phragmenElection) {
-		let [voters, candidates] = await Promise.all([
-			api.query.phragmenElection.voting.keys(),
-			api.query.phragmenElection.candidates(),
-		]);
-		councilMetric.set({ entity: "voters" }, voters.length);
-		// @ts-ignore
-		councilMetric.set({ entity: "candidates" }, candidates.length);
-	}
-}
-
 async function perDay(api: ApiPromise) {
 	logger.info(`starting daily scrape at ${new Date().toISOString()}`)
 	Promise.all([stakingDaily(api), palletStorageSize(api)])
@@ -279,9 +264,7 @@ async function perDay(api: ApiPromise) {
 async function perHour(api: ApiPromise) {
 	logger.info(`starting hourly scrape at ${new Date().toISOString()}`)
 	let stakingPromise = stakingHourly(api);
-	let councilPromise = council(api);
-
-	Promise.all([stakingPromise, councilPromise])
+	Promise.all([stakingPromise])
 }
 
 async function perBlock(api: ApiPromise, header: Header) {
@@ -347,10 +330,10 @@ async function update() {
 	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
 
 	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), 2 * MINUTES);
+	const _perHour = setInterval(() => perHour(api), HOURS);
 
 	// update stuff daily
-	const _perDay = setInterval(() => perDay(api), 3 * MINUTES);
+	const _perDay = setInterval(() => perDay(api), 24 * HOURS);
 
 	// update stuff per block.
 	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
