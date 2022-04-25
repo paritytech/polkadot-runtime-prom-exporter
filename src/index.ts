@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ApiPromise, ApiRx, WsProvider } from "@polkadot/api";
 import { Header, SignedBlock } from "@polkadot/types/interfaces";
 import "@polkadot/api-augment";
 import * as PromClient from "prom-client"
@@ -7,6 +7,9 @@ import { config } from "dotenv";
 import BN from "bn.js";
 import { xxhashAsHex } from "@polkadot/util-crypto";
 import * as winston from 'winston'
+import { AccountId, Balance, } from "@polkadot/types/interfaces/runtime"
+import { PalletBagsListListNode, PalletBagsListListBag } from "@polkadot/types/lookup"
+import { ApiDecoration } from "@polkadot/api/types";
 
 config();
 
@@ -26,6 +29,11 @@ export const logger = winston.createLogger({
 	transports: [new winston.transports.Console()]
 })
 
+async function getFinalizedApi(api: ApiPromise): Promise<ApiDecoration<"promise">> {
+	const finalized = await api.rpc.chain.getFinalizedHead();
+	return await api.at(finalized)
+}
+
 
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9999";
 const PORT = process.env.PORT || 8080;
@@ -40,7 +48,6 @@ const DAYS = 24 * HOURS;
 
 // TODO: histogram of calls
 // TODO: total number of accounts
-// TODO: bags-list: all nodes, active bags, need-rebag
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
@@ -140,12 +147,20 @@ const palletSizeMetric = new PromClient.Gauge({
 const voterListBags = new PromClient.Gauge({
 	name: "runtime_voter_list_bags",
 	help: "number of voter list bags",
-	labelNames: ["active", "total"]
+	labelNames: ["type"] // active or empty
+})
+
+const voterListNodesPerBag = new PromClient.Gauge({
+	name: "runtime_voter_list_node_per_bag",
+	help: "number of nodes per bag",
+	labelNames: ["bag"],
+
 })
 
 const voterListNodes = new PromClient.Gauge({
 	name: "runtime_voter_list_nodes",
 	help: "number of nodes in the voter list",
+	labelNames: ["type"] // node or needs-rebag
 })
 
 // misc
@@ -171,10 +186,16 @@ registry.registerMetric(multiPhaseUnsignedSolutionMetric);
 registry.registerMetric(multiPhaseSnapshotMetric);
 registry.registerMetric(multiPhaseQueuedSolutionScoreMetric);
 
+// bags
+registry.registerMetric(voterListBags);
+registry.registerMetric(voterListNodes);
+registry.registerMetric(voterListNodesPerBag);
+
 // meta
 registry.registerMetric(palletSizeMetric);
 
-async function stakingHourly(api: ApiPromise) {
+async function stakingHourly(baseApi: ApiPromise) {
+	const api = await getFinalizedApi(baseApi);
 	let currentEra = (await api.query.staking.currentEra()).unwrapOrDefault();
 	let exposures = await api.query.staking.erasStakers.entries(currentEra);
 
@@ -193,11 +214,10 @@ async function stakingHourly(api: ApiPromise) {
 	nominatorCountMetric.set({ type: "active" }, totalExposedNominators);
 }
 
-async function stakingDaily(api: ApiPromise) {
+async function stakingDaily(baseApi: ApiPromise) {
+	const api = await getFinalizedApi(baseApi);
 	logger.debug(`starting staking daily process.`);
 	let ledgers = await api.query.staking.ledger.entries();
-
-	logger.debug(`fetched ${ledgers.length} ledgers`);
 
 	let totalBondedAccounts = ledgers.length;
 	let totalBondedStake = ledgers.map(([_, ledger]) =>
@@ -261,10 +281,98 @@ async function perDay(api: ApiPromise) {
 	Promise.all([stakingDaily(api), palletStorageSize(api)])
 }
 
+async function voterBags(baseApi: ApiPromise) {
+	const api = await getFinalizedApi(baseApi);
+
+	interface Bag {
+		head: AccountId,
+		tail: AccountId,
+		upper: Balance,
+		nodes: AccountId[],
+	}
+
+	async function needsRebag(
+		api: ApiDecoration<"promise">,
+		bagThresholds: BN[],
+		node: PalletBagsListListNode,
+	): Promise<boolean> {
+		const currentWeight = await correctWeightOf(node, api);
+		const canonicalUpper = bagThresholds.find((t) => t.gt(currentWeight)) || new BN("18446744073709551615");
+		if (canonicalUpper.gt(node.bagUpper)) {
+			return true
+		} else if (canonicalUpper.lt(node.bagUpper)) {
+			// this should ALMOST never happen: we handle all rebags to lower accounts, except if a
+			// slash happens.
+			return true
+		} else {
+			// correct spot.
+			return false
+		}
+	}
+
+	async function correctWeightOf(node: PalletBagsListListNode, api: ApiDecoration<"promise">): Promise<BN> {
+		const currentAccount = node.id;
+		const currentCtrl = (await api.query.staking.bonded(currentAccount)).unwrap();
+		return (await api.query.staking.ledger(currentCtrl)).unwrapOrDefault().active.toBn()
+	}
+
+
+	let entries = await api.query.bagsList.listBags.entries();
+
+	const bags: Bag[] = [];
+	const needRebag: AccountId[] = [];
+	const bagThresholds = api.consts.bagsList.bagThresholds.map((x) => baseApi.createType('Balance', x));
+
+	entries.forEach(([key, bag]) => {
+		if (bag.isSome && bag.unwrap().head.isSome && bag.unwrap().tail.isSome) {
+			const head = bag.unwrap().head.unwrap();
+			const tail = bag.unwrap().tail.unwrap();
+			const keyInner = key.args[0];
+			const upper = baseApi.createType('Balance', keyInner.toBn());
+			bags.push({ head, tail, upper, nodes: [] })
+		}
+	});
+
+	console.log(`🧾 collected a total of ${bags.length} active bags.`)
+	bags.sort((a, b) => a.upper.cmp(b.upper));
+
+	let counter = 0;
+	for (const { head, tail, upper, nodes } of bags) {
+		// process the bag.
+		let current = head;
+		let cond = true
+		while (cond) {
+			const currentNode = (await api.query.bagsList.listNodes(current)).unwrap();
+			if (await needsRebag(api, bagThresholds, currentNode)) {
+				needRebag.push(currentNode.id);
+			}
+			nodes.push(currentNode.id);
+			if (currentNode.next.isSome) {
+				current = currentNode.next.unwrap()
+			} else {
+				cond = false
+			}
+		}
+		counter += nodes.length;
+		voterListNodesPerBag.set({ "bag": upper.toString() }, nodes.length)
+		console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
+	}
+
+	voterListBags.set({ type: "active" }, bags.length)
+	voterListBags.set({ type: "empty" }, bagThresholds.length);
+
+	voterListNodes.set({ type: "all_nodes" }, counter);
+	voterListNodes.set({ type: "needs_rebag" }, needsRebag.length);
+
+	console.log(`📊 total count of nodes: ${counter}`);
+	console.log(`..of which ${needRebag.length} need a rebag`);
+}
+
 async function perHour(api: ApiPromise) {
 	logger.info(`starting hourly scrape at ${new Date().toISOString()}`)
 	let stakingPromise = stakingHourly(api);
-	Promise.all([stakingPromise])
+	let voterBagsPromise = voterBags(api);
+	Promise.all([stakingPromise, voterBagsPromise])
 }
 
 async function perBlock(api: ApiPromise, header: Header) {
@@ -313,13 +421,13 @@ async function palletStorageSize(api: ApiPromise) {
 			const y = xxhashAsHex(item.name.toString(), 128);
 			const key = `${x}${y.slice(2)}`;
 			const size = await api.rpc.state.getStorageSize(key);
-			logger.debug(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
+			logger.info(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
 			palletSizeMetric.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
 		}
 	}
 }
 
-function decimals(api: ApiPromise): BN {
+function decimals(api: ApiDecoration<"promise">): BN {
 	return new BN(Math.pow(10, api.registry.chainDecimals[0]))
 }
 
