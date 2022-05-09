@@ -1,4 +1,4 @@
-import { ApiPromise, ApiRx, WsProvider } from "@polkadot/api";
+import { ApiPromise, WsProvider } from "@polkadot/api";
 import { Header, SignedBlock } from "@polkadot/types/interfaces";
 import "@polkadot/api-augment";
 import * as PromClient from "prom-client"
@@ -427,6 +427,25 @@ async function palletStorageSize(api: ApiPromise) {
 	}
 }
 
+/*
+for (let pallet of api.runtimeMetadata.asV14.pallets) {
+		const storage = pallet.storage.unwrapOrDefault();
+		const prefix = storage.prefix;
+		const items = storage.items;
+		console.log(prefix.toString());
+		const sizes = await Promise.all(items.map(async (item) => {
+			const x = xxhashAsHex(prefix.toString(), 128);
+			const y = xxhashAsHex(item.name.toString(), 128);
+			const key = `${x}${y.slice(2)}`;
+			return api.rpc.state.getStorageSize(key);
+		}));
+		for (let { item, size } of items.map((x, i) => { return { item: x, size: sizes[i] } })) {
+			logger.debug(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
+			palletSizeMetric.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
+		}
+	}
+*/
+
 function decimals(api: ApiDecoration<"promise">): BN {
 	return new BN(Math.pow(10, api.registry.chainDecimals[0]))
 }
@@ -438,7 +457,7 @@ async function update() {
 	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
 
 	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), HOURS);
+	const _perHour = setInterval(() => perHour(api), 60 * MINUTES);
 
 	// update stuff daily
 	const _perDay = setInterval(() => perDay(api), 24 * HOURS);
