@@ -48,6 +48,8 @@ const DAYS = 24 * HOURS;
 
 // TODO: histogram of calls
 // TODO: total number of accounts
+// TODO: counter of bag nodes matching
+// TODO: pools: TVL, num pools, num-members, points to balance-ratio of each pool
 
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
