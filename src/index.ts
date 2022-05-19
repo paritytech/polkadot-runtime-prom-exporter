@@ -13,6 +13,9 @@ import { ApiDecoration } from "@polkadot/api/types";
 
 config();
 
+// 15 mins, instead of the default 1min.
+const DEFAULT_TIMEOUT = 15 * 60 * 1000;
+
 export const logger = winston.createLogger({
 	level: process.env.LOG_LEVEL || 'debug',
 	format: winston.format.combine(
@@ -453,7 +456,7 @@ function decimals(api: ApiDecoration<"promise">): BN {
 }
 
 async function update() {
-	const provider = new WsProvider(WS_PROVIDER);
+	const provider = new WsProvider(WS_PROVIDER, 1000, {}, DEFAULT_TIMEOUT);
 	const api = await ApiPromise.create({ provider });
 
 	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
