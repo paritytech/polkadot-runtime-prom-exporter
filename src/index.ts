@@ -394,7 +394,7 @@ async function perBlock(api: ApiPromise, header: Header) {
 
 	const signedLength = signed_block.block.extrinsics.filter((ext) => ext.isSigned).length
 	const unsignedLength = signed_block.block.extrinsics.length - signedLength;
-	numExtrinsicsMetric.set({ type: "singed" }, signedLength);
+	numExtrinsicsMetric.set({ type: "signed" }, signedLength);
 	numExtrinsicsMetric.set({ type: "unsigned" }, unsignedLength);
 
 	// update issuance
