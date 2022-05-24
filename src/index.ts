@@ -8,10 +8,108 @@ import BN from "bn.js";
 import { xxhashAsHex } from "@polkadot/util-crypto";
 import * as winston from 'winston'
 import { AccountId, Balance, } from "@polkadot/types/interfaces/runtime"
-import { PalletBagsListListNode, PalletBagsListListBag } from "@polkadot/types/lookup"
+import { PalletBagsListListNode } from "@polkadot/types/lookup"
 import { ApiDecoration } from "@polkadot/api/types";
 
 config();
+
+/// Something that wants to be an exporter of data.
+interface Exporter {
+	/// The name of this pallet. If this property exists in `apu.query`, then we can assume this
+	/// pallet exists in a runtime we connect to.
+	///
+	/// TODO: This is fundamentally flawed, since a pallet can be renamed inside the runtime. We need a
+	/// better unique identifier for each pallet on the FRAME side.
+	palletIdentifier: any;
+
+
+	/// Hook executed per every block.
+	///
+	/// The header and block are also provided.
+	perBlock(api: ApiPromise, header: Header): Promise<void>,
+	/// Hook executed per every hour.
+	perHour(api: ApiPromise): any,
+	/// Hook executed per every
+	perDay(api: ApiPromise): any,
+}
+
+class SystemExporter implements Exporter {
+	palletIdentifier: any;
+	finalizedHead: PromClient.Gauge<"class">;
+	blockWeight: PromClient.Gauge<"class">;
+	blockLength: PromClient.Gauge<"class">;
+	numExtrinsics: PromClient.Gauge<"type">;
+	palletSize: PromClient.Gauge<"pallet" | "item">
+
+	constructor(registry: PromClient.Registry) {
+		this.palletIdentifier = "system";
+
+		this.finalizedHead = new PromClient.Gauge({
+			name: "chain_finalized_number",
+			help: "finalized head of the chain."
+		})
+		this.blockWeight = new PromClient.Gauge({
+			name: "runtime_weight",
+			help: "weight of the block; labeled by dispatch class.",
+			labelNames: ["class"]
+		})
+		this.blockLength = new PromClient.Gauge({
+			name: "runtime_block_length_bytes",
+			help: "encoded length of the block in bytes.",
+		})
+		this.numExtrinsics = new PromClient.Gauge({
+			name: "runtime_extrinsics_count",
+			help: "number of extrinsics in the block, labeled by signature type.",
+			labelNames: ["type"]
+		})
+		this.palletSize = new PromClient.Gauge({
+			name: "runtime_pallet_size",
+			help: "entire storage size of a pallet, in bytes.",
+			labelNames: ["pallet", "item"]
+		})
+
+		registry.registerMetric(this.finalizedHead);
+		registry.registerMetric(this.blockWeight);
+		registry.registerMetric(this.blockLength);
+		registry.registerMetric(this.numExtrinsics);
+		registry.registerMetric(this.palletSize);
+	}
+
+	async perBlock(api: ApiPromise, header: Header): Promise<void> {
+		this.finalizedHead.set(header.number.toNumber());
+
+		const weight = await api.query.system.blockWeight();
+		this.blockWeight.set({ class: "normal" }, weight.normal.toNumber());
+		this.blockWeight.set({ class: "operational" }, weight.operational.toNumber());
+		this.blockWeight.set({ class: "mandatory" }, weight.mandatory.toNumber());
+
+		const block = await api.rpc.chain.getBlock(header.hash);
+		this.blockLength.set(block.block.encodedLength);
+
+		const signedLength = block.block.extrinsics.filter((ext) => ext.isSigned).length
+		const unsignedLength = block.block.extrinsics.length - signedLength;
+
+		this.numExtrinsics.set({ type: "signed" }, signedLength);
+		this.numExtrinsics.set({ type: "unsigned" }, unsignedLength);
+	}
+
+	async perDay(api: ApiPromise) {
+		for (let pallet of api.runtimeMetadata.asV14.pallets) {
+			const storage = pallet.storage.unwrapOrDefault();
+			const prefix = storage.prefix;
+			for (let item of storage.items) {
+				const x = xxhashAsHex(prefix.toString(), 128);
+				const y = xxhashAsHex(item.name.toString(), 128);
+				const key = `${x}${y.slice(2)}`;
+				const size = await api.rpc.state.getStorageSize(key);
+				logger.info(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
+				this.palletSize.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
+			}
+		}
+	}
+
+	perHour(api: ApiPromise) { }
+}
 
 // 15 mins, instead of the default 1min.
 const DEFAULT_TIMEOUT = 15 * 60 * 1000;
@@ -47,50 +145,33 @@ console.log(`+ PORT = ${PORT}`)
 const SECONDS = 1000;
 const MINUTES = 60 * SECONDS;
 const HOURS = 60 * MINUTES;
-const DAYS = 24 * HOURS;
 
 // TODO: histogram of calls
 // TODO: total number of accounts
 // TODO: counter of bag nodes matching
 // TODO: pools: TVL, num pools, num-members, points to balance-ratio of each pool
 
+// TODO: this should not be a global object once this refactor is done.
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
 	app: 'runtime-metrics'
 })
 
-const finalizedHeadMetric = new PromClient.Gauge({
-	name: "chain_finalized_number",
-	help: "finalized head of the chain."
-})
 
-const weightMetric = new PromClient.Gauge({
-	name: "runtime_weight",
-	help: "weight of the block; labeled by dispatch class.",
-	labelNames: ["class"]
-})
 
+// timestamp
 const timestampMetric = new PromClient.Gauge({
 	name: "runtime_timestamp_seconds",
 	help: "timestamp of the block.",
 })
 
-const blockLengthMetric = new PromClient.Gauge({
-	name: "runtime_block_length_bytes",
-	help: "encoded length of the block in bytes.",
-})
-
-const numExtrinsicsMetric = new PromClient.Gauge({
-	name: "runtime_extrinsics_count",
-	help: "number of extrinsics in the block, labeled by signature type.",
-	labelNames: ["type"]
-})
-
+// balances
 const totalIssuanceMetric = new PromClient.Gauge({
 	name: "runtime_total_issuance",
 	help: "the total issuance of the runtime, updated per block",
 })
 
+// staking
 const nominatorCountMetric = new PromClient.Gauge({
 	name: "runtime_nominator_count",
 	help: "Total number of nominators in staking system",
@@ -115,11 +196,13 @@ const ledgerMetric = new PromClient.Gauge({
 	labelNames: ["type"],
 })
 
+// transaction payment
 const weightMultiplierMetric = new PromClient.Gauge({
 	name: "runtime_weight_to_fee_multiplier",
 	help: "The weight to fee multiplier, in number."
 })
 
+// election-provider-multi-phase
 const multiPhaseUnsignedSolutionMetric = new PromClient.Gauge({
 	name: "runtime_multi_phase_election_unsigned",
 	help: "Stats of the latest unsigned multi_phase submission.",
@@ -143,12 +226,7 @@ const multiPhaseSnapshotMetric = new PromClient.Gauge({
 	help: "Size of the latest multi_phase election snapshot.",
 })
 
-const palletSizeMetric = new PromClient.Gauge({
-	name: "runtime_pallet_size",
-	help: "entire storage size of a pallet, in bytes.",
-	labelNames: ["pallet", "item"]
-})
-
+// bags-list pallet.
 const voterListBags = new PromClient.Gauge({
 	name: "runtime_voter_list_bags",
 	help: "number of voter list bags",
@@ -169,15 +247,9 @@ const voterListNodes = new PromClient.Gauge({
 })
 
 // misc
-registry.registerMetric(finalizedHeadMetric);
 registry.registerMetric(timestampMetric);
 registry.registerMetric(weightMultiplierMetric);
 registry.registerMetric(totalIssuanceMetric);
-
-// block
-registry.registerMetric(weightMetric);
-registry.registerMetric(blockLengthMetric);
-registry.registerMetric(numExtrinsicsMetric);
 
 // staking
 registry.registerMetric(nominatorCountMetric);
@@ -195,9 +267,6 @@ registry.registerMetric(multiPhaseQueuedSolutionScoreMetric);
 registry.registerMetric(voterListBags);
 registry.registerMetric(voterListNodes);
 registry.registerMetric(voterListNodesPerBag);
-
-// meta
-registry.registerMetric(palletSizeMetric);
 
 async function stakingHourly(baseApi: ApiPromise) {
 	const api = await getFinalizedApi(baseApi);
@@ -283,7 +352,7 @@ async function multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock) {
 
 async function perDay(api: ApiPromise) {
 	logger.info(`starting daily scrape at ${new Date().toISOString()}`)
-	Promise.all([stakingDaily(api), palletStorageSize(api)])
+	Promise.all([stakingDaily(api)])
 }
 
 async function voterBags(baseApi: ApiPromise) {
@@ -388,19 +457,8 @@ async function perBlock(api: ApiPromise, header: Header) {
 		api.query.timestamp.now(),
 		api.rpc.chain.getBlock(header.hash)
 	]);
-	const blockLength = signed_block.block.encodedLength;
 
-	finalizedHeadMetric.set(number.toNumber());
-	weightMetric.set({ class: "normal" }, weight.normal.toNumber());
-	weightMetric.set({ class: "operational" }, weight.operational.toNumber());
-	weightMetric.set({ class: "mandatory" }, weight.mandatory.toNumber());
 	timestampMetric.set(timestamp.toNumber() / 1000);
-	blockLengthMetric.set(blockLength);
-
-	const signedLength = signed_block.block.extrinsics.filter((ext) => ext.isSigned).length
-	const unsignedLength = signed_block.block.extrinsics.length - signedLength;
-	numExtrinsicsMetric.set({ type: "signed" }, signedLength);
-	numExtrinsicsMetric.set({ type: "unsigned" }, unsignedLength);
 
 	// update issuance
 	let issuance = (await api.query.balances.totalIssuance()).toBn();
@@ -417,58 +475,33 @@ async function perBlock(api: ApiPromise, header: Header) {
 	await multiPhasePerBlock(api, signed_block);
 }
 
-async function palletStorageSize(api: ApiPromise) {
-	for (let pallet of api.runtimeMetadata.asV14.pallets) {
-		const storage = pallet.storage.unwrapOrDefault();
-		const prefix = storage.prefix;
-		for (let item of storage.items) {
-			const x = xxhashAsHex(prefix.toString(), 128);
-			const y = xxhashAsHex(item.name.toString(), 128);
-			const key = `${x}${y.slice(2)}`;
-			const size = await api.rpc.state.getStorageSize(key);
-			logger.info(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
-			palletSizeMetric.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
-		}
-	}
-}
-
-/*
-for (let pallet of api.runtimeMetadata.asV14.pallets) {
-		const storage = pallet.storage.unwrapOrDefault();
-		const prefix = storage.prefix;
-		const items = storage.items;
-		console.log(prefix.toString());
-		const sizes = await Promise.all(items.map(async (item) => {
-			const x = xxhashAsHex(prefix.toString(), 128);
-			const y = xxhashAsHex(item.name.toString(), 128);
-			const key = `${x}${y.slice(2)}`;
-			return api.rpc.state.getStorageSize(key);
-		}));
-		for (let { item, size } of items.map((x, i) => { return { item: x, size: sizes[i] } })) {
-			logger.debug(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
-			palletSizeMetric.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
-		}
-	}
-*/
-
 function decimals(api: ApiDecoration<"promise">): BN {
 	return new BN(Math.pow(10, api.registry.chainDecimals[0]))
 }
 
-async function update() {
-	const provider = new WsProvider(WS_PROVIDER, 1000, {}, DEFAULT_TIMEOUT);
-	const api = await ApiPromise.create({ provider });
+async function main() {
+	// TODO: should come from json config.
+	const chains = ["ws://localhost:9999"];
+	// hardcoded for now, just the list of all the exporters that we support.
+	const exporters = [new SystemExporter(registry)]
 
-	logger.info(`connected to chain ${(await api.rpc.system.chain()).toString().toLowerCase()}`);
+	for (let chain of chains) {
+		const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
+		const api = await ApiPromise.create({ provider });
+		const chainName = await api.rpc.system.name();
+		logger.info(`connected to chain ${chainName}`);
 
-	// update stuff per hour
-	const _perHour = setInterval(() => perHour(api), 60 * MINUTES);
-
-	// update stuff daily
-	const _perDay = setInterval(() => perDay(api), 24 * HOURS);
-
-	// update stuff per block.
-	const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => perBlock(api, header));
+		// TODO: all of the async operations could potentially be double-checked for sensibility,
+		// and improved. Also, more things can be parallelized here with Promise.all.
+		for (let exporter of exporters) {
+			if (api.query[exporter.palletIdentifier]) {
+				logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
+				const _perHour = setInterval(() => exporter.perHour(api), 60 * MINUTES);
+				const _perDay = setInterval(() => exporter.perDay(api), 24 * HOURS);
+				const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => exporter.perBlock(api, header));
+			}
+		}
+	}
 }
 
 const server = http.createServer(async (req, res) => {
@@ -508,4 +541,4 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, "0.0.0.0");
 console.log(`Server listening on port ${PORT}`)
 
-update().then().catch(console.error);
+main().then().catch(console.error);
