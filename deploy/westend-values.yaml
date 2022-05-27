@@ -1,0 +1,5 @@
+runtimeExporter:
+  wsProvider: "ws://westend-runtime-exporter-node-0:9944"
+
+serviceMonitor:
+  enabled: true

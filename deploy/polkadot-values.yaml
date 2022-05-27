@@ -1,0 +1,5 @@
+runtimeExporter:
+  wsProvider: "ws://kusama-runtime-exporter-node-0:9944"
+
+serviceMonitor:
+  enabled: true
