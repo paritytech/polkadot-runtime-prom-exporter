@@ -457,59 +457,59 @@ class StakingExporter implements Exporter {
 			return (await api.query.staking.ledger(currentCtrl)).unwrapOrDefault().active.toBn()
 		}
 	
-	
-		let entries = await api.query.bagsList.listBags.entries();
-	
-		const bags: Bag[] = [];
-		const needRebag: AccountId[] = [];
-		const bagThresholds = api.consts.bagsList.bagThresholds.map((x) => baseApi.createType('Balance', x));
-	
-		entries.forEach(([key, bag]) => {
-			if (bag.isSome && bag.unwrap().head.isSome && bag.unwrap().tail.isSome) {
-				const head = bag.unwrap().head.unwrap();
-				const tail = bag.unwrap().tail.unwrap();
-				const keyInner = key.args[0];
-				const upper = baseApi.createType('Balance', keyInner.toBn());
-				bags.push({ head, tail, upper, nodes: [] })
-			}
-		});
-	
-		console.log(`🧾 collected a total of ${bags.length} active bags.`)
-		bags.sort((a, b) => a.upper.cmp(b.upper));
-	
-		let counter = 0;
-		for (const { head, tail, upper, nodes } of bags) {
-			// process the bag.
-			let current = head;
-			let cond = true
-			while (cond) {
-				const currentNode = (await api.query.bagsList.listNodes(current)).unwrap();
-				if (await needsRebag(api, bagThresholds, currentNode)) {
-					needRebag.push(currentNode.id);
+		if ( api.query['bagsList']) {
+
+			let entries = await api.query.bagsList.listBags.entries();
+		
+			const bags: Bag[] = [];
+			const needRebag: AccountId[] = [];
+			const bagThresholds = api.consts.bagsList.bagThresholds.map((x) => baseApi.createType('Balance', x));
+		
+			entries.forEach(([key, bag]) => {
+				if (bag.isSome && bag.unwrap().head.isSome && bag.unwrap().tail.isSome) {
+					const head = bag.unwrap().head.unwrap();
+					const tail = bag.unwrap().tail.unwrap();
+					const keyInner = key.args[0];
+					const upper = baseApi.createType('Balance', keyInner.toBn());
+					bags.push({ head, tail, upper, nodes: [] })
 				}
-				nodes.push(currentNode.id);
-				if (currentNode.next.isSome) {
-					current = currentNode.next.unwrap()
-				} else {
-					cond = false
+			});
+		
+			console.log(`🧾 collected a total of ${bags.length} active bags.`)
+			bags.sort((a, b) => a.upper.cmp(b.upper));
+		
+			let counter = 0;
+			for (const { head, tail, upper, nodes } of bags) {
+				// process the bag.
+				let current = head;
+				let cond = true
+				while (cond) {
+					const currentNode = (await api.query.bagsList.listNodes(current)).unwrap();
+					if (await needsRebag(api, bagThresholds, currentNode)) {
+						needRebag.push(currentNode.id);
+					}
+					nodes.push(currentNode.id);
+					if (currentNode.next.isSome) {
+						current = currentNode.next.unwrap()
+					} else {
+						cond = false
+					}
 				}
+				counter += nodes.length;
+				this.voterListNodesPerBag.set({ "bag": upper.toString(), chain: chainName }, nodes.length)
+				console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
 			}
-			counter += nodes.length;
-			this.voterListNodesPerBag.set({ "bag": upper.toString(), chain: chainName }, nodes.length)
-			console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
+		
+			this.voterListBags.set({ type: "active", chain: chainName}, bags.length)
+			this.voterListBags.set({ type: "empty", chain: chainName}, bagThresholds.length);
+		
+			this.voterListNodes.set({ type: "all_nodes", chain: chainName}, counter);
+			this.voterListNodes.set({ type: "needs_rebag", chain: chainName }, needsRebag.length);
+		
+			console.log(`📊 total count of nodes: ${counter}`);
+			console.log(`..of which ${needRebag.length} need a rebag`);
 		}
-	
-		this.voterListBags.set({ type: "active", chain: chainName}, bags.length)
-		this.voterListBags.set({ type: "empty", chain: chainName}, bagThresholds.length);
-	
-		this.voterListNodes.set({ type: "all_nodes", chain: chainName}, counter);
-		this.voterListNodes.set({ type: "needs_rebag", chain: chainName }, needsRebag.length);
-	
-		console.log(`📊 total count of nodes: ${counter}`);
-		console.log(`..of which ${needRebag.length} need a rebag`);
 	}
-
-
 }
 
 // 15 mins, instead of the default 1min.
