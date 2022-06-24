@@ -262,7 +262,9 @@ class TransactionPaymentExporter implements Exporter {
 		// transaction payment
 		this.weightMultiplierMetric = new PromClient.Gauge({
 			name: "runtime_weight_to_fee_multiplier",
-			help: "The weight to fee multiplier, in number."
+			help: "The weight to fee multiplier, in number.",
+			labelNames: ["type", "chain"]
+
 		})
 
 		registry.registerMetric(this.weightMultiplierMetric);
@@ -272,7 +274,7 @@ class TransactionPaymentExporter implements Exporter {
 	async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
 		console.log('transactionPayment', chainName)
 		let weightFeeMultiplier = await api.query.transactionPayment.nextFeeMultiplier()
-		this.weightMultiplierMetric.set(weightFeeMultiplier.mul(new BN(100)).div(new BN(10).pow(new BN(18))).toNumber())
+		this.weightMultiplierMetric.set({ chain: chainName },weightFeeMultiplier.mul(new BN(100)).div(new BN(10).pow(new BN(18))).toNumber())
 	
 	}
 
@@ -536,7 +538,6 @@ async function getFinalizedApi(api: ApiPromise): Promise<ApiDecoration<"promise"
 	return await api.at(finalized)
 }
 
-
 const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9999";
 const PORT = process.env.PORT || 8080;
 
@@ -566,7 +567,10 @@ async function main() {
 
 	const mychains = data;
 	logger.info(`conneting to chains ${mychains}`);
-	const exporters = [new SystemExporter(registry), new StakingExporter(registry), new BalancesExporter(registry)]
+	const exporters = [new SystemExporter(registry), 
+					   new StakingExporter(registry), 
+					   new BalancesExporter(registry),
+					   new TransactionPaymentExporter(registry)]
 
 	for (let chain of mychains) {
 		logger.info(`connecting to chain ${chain}`);
@@ -578,7 +582,7 @@ async function main() {
 		// TODO: all of the async operations could potentially be double-checked for sensibility,
 		// and improved. Also, more things can be parallelized here with Promise.all.
 		for (let exporter of exporters) {
-			console.log('chain', chainName,'pallet', exporter.palletIdentifier,'query', api.query[exporter.palletIdentifier]);
+			logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
 			if ( api.query[exporter.palletIdentifier]) {
 				logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
 				const _perHour = setInterval(() => exporter.perHour(api, chainName.toString()), 60 * MINUTES);
