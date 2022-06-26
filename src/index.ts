@@ -10,7 +10,8 @@ import * as winston from 'winston'
 import { AccountId, Balance, } from "@polkadot/types/interfaces/runtime"
 import { PalletBagsListListNode } from "@polkadot/types/lookup"
 import { ApiDecoration } from "@polkadot/api/types";
-import data from "./parachains.json";
+import parachains from "./parachains.json";
+import { exit } from "process";
 
 config();
 
@@ -565,33 +566,41 @@ function decimals(api: ApiDecoration<"promise">): BN {
 
 async function main() {
 
-	const mychains = data;
-	logger.info(`conneting to chains ${mychains}`);
-	const exporters = [new SystemExporter(registry), 
-					   new StakingExporter(registry), 
-					   new BalancesExporter(registry),
-					   new TransactionPaymentExporter(registry)]
+	const mychains = parachains;
+	if (mychains.length) {
+		logger.info(`connecting to chains ${mychains}`);
+		const exporters = [new SystemExporter(registry), 
+						new StakingExporter(registry), 
+						new BalancesExporter(registry),
+						new TransactionPaymentExporter(registry)]
 
-	for (let chain of mychains) {
-		logger.info(`connecting to chain ${chain}`);
-		const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
-		const api = await ApiPromise.create({ provider });
-		const chainName = await api.rpc.system.name();
-		logger.info(`connected to chain ${chainName}`);
+		for (let chain of mychains) {
+			logger.info(`connecting to chain ${chain}`);
+			const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
+			const api = await ApiPromise.create({ provider });
+			const chainName = await api.rpc.system.name();
+			logger.info(`connected to chain ${chainName}`);
 
-		// TODO: all of the async operations could potentially be double-checked for sensibility,
-		// and improved. Also, more things can be parallelized here with Promise.all.
-		for (let exporter of exporters) {
-			logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
-			if ( api.query[exporter.palletIdentifier]) {
-				logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
-				const _perHour = setInterval(() => exporter.perHour(api, chainName.toString()), 60 * MINUTES);
-				const _perDay = setInterval(() => exporter.perDay(api, chainName.toString()), 24 * HOURS);
-				const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => exporter.perBlock(api, header, chainName.toString()));
-			} else {
-				logger.info(`Pallet ${exporter.palletIdentifier} not supported for chain ${chainName}`);
+			// TODO: all of the async operations could potentially be double-checked for sensibility,
+			// and improved. Also, more things can be parallelized here with Promise.all.
+			for (let exporter of exporters) {
+				logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
+				if ( api.query[exporter.palletIdentifier]) {
+					logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
+					const _perHour = setInterval(() => exporter.perHour(api, chainName.toString()), 60 * MINUTES);
+					const _perDay = setInterval(() => exporter.perDay(api, chainName.toString()), 24 * HOURS);
+					const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => exporter.perBlock(api, header, chainName.toString()));
+				} else {
+					logger.info(`Pallet ${exporter.palletIdentifier} not supported for chain ${chainName}`);
+				}
 			}
 		}
+	}
+	else {
+		logger.info(`parachains.json file is empty, please add at least one rpc address:\n
+		Example: ["wss://kusama-runtime-exporter-node.parity-chains.parity.io",
+				wss://polkadot-runtime-exporter-node.parity-chains.parity.io"]\n`);
+		process.exit();
 	}
 }
 
