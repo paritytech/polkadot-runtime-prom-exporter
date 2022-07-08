@@ -1,548 +1,43 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import { Header, SignedBlock } from "@polkadot/types/interfaces";
 import "@polkadot/api-augment";
 import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
 import BN from "bn.js";
-import { xxhashAsHex } from "@polkadot/util-crypto";
-import * as winston from 'winston'
-import { AccountId, Balance, } from "@polkadot/types/interfaces/runtime"
-import { PalletBagsListListNode } from "@polkadot/types/lookup"
 import { ApiDecoration } from "@polkadot/api/types";
 import parachains from "./parachains.json";
+import parachainsids from "./parachains-ids.json";
 import { exit } from "process";
+import {SystemExporter} from "./exporters/system";
+import {BalancesExporter} from "./exporters/balances";
+import {XCMTransfersExporter} from "./exporters/xcmTransfers";
+import {StakingMinerAccountExporter} from "./exporters/stakingMinerAccount";
+import {TransactionPaymentExporter} from "./exporters/transactionPayment";
+import {StakingExporter} from "./exporters/staking";
+import {PalletsMethodsExporter} from "./exporters/palletsMethodsCalls";
+import {logger} from "./logger";
 
 config();
 
-/// Something that wants to be an exporter of data.
-interface Exporter {
-	/// The name of this pallet. If this property exists in `apu.query`, then we can assume this
-	/// pallet exists in a runtime we connect to.
-	///
-	/// TODO: This is fundamentally flawed, since a pallet can be renamed inside the runtime. We need a
-	/// better unique identifier for each pallet on the FRAME side.
-	palletIdentifier: any;
+// 30 mins, instead of the default 1min.
+const DEFAULT_TIMEOUT = 30 * 60 * 1000;
 
-
-	/// Hook executed per every block.
-	///
-	/// The header and block are also provided.
-	perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void>,
-	/// Hook executed per every hour.
-	perHour(api: ApiPromise, chainName: string): any,
-	/// Hook executed per every
-	perDay(api: ApiPromise, chainName: string): any,
+export function getParachainName(mykey: string): string {
+	for (const [key, value] of Object.entries(parachainsids)) {
+		if (mykey == key) {
+			return value;
+		}
+	}
+	return mykey;
 }
 
-class SystemExporter implements Exporter {
-	palletIdentifier: any;
-	finalizedHead: PromClient.Gauge<"class" | "chain">;
-	blockWeight: PromClient.Gauge<"class" | "chain">;
-	blockLength: PromClient.Gauge<"class" | "chain">;
-	numExtrinsics: PromClient.Gauge<"type" | "chain">;
-	palletSize: PromClient.Gauge<"pallet" | "item" | "chain">
-	//timestamp
-	timestampMetric: PromClient.Gauge<"pallet" | "chain">
-	//multi-phase
-	multiPhaseUnsignedSolutionMetric: PromClient.Gauge<"measure" | "chain">
-	multiPhaseSignedSolutionMetric: PromClient.Gauge<"measure" | "chain">
-	multiPhaseQueuedSolutionScoreMetric: PromClient.Gauge<"score" | "chain">
-	multiPhaseSnapshotMetric: PromClient.Gauge< "chain">
-
-	constructor(registry: PromClient.Registry) {
-
-		registry.setDefaultLabels({
-			app: 'runtime-metrics'
-		})
-
-		this.palletIdentifier = "system";
-
-		this.finalizedHead = new PromClient.Gauge({
-			name: "chain_finalized_number",
-			help: "finalized head of the chain.",
-			labelNames: ["class", "chain"]			
-		})
-		this.blockWeight = new PromClient.Gauge({
-			name: "runtime_weight",
-			help: "weight of the block; labeled by dispatch class.",
-			labelNames: ["class", "chain"]
-		})
-		this.blockLength = new PromClient.Gauge({
-			name: "runtime_block_length_bytes",
-			help: "encoded length of the block in bytes.",
-			labelNames: ["class", "chain"]
-
-		})
-		this.numExtrinsics = new PromClient.Gauge({
-			name: "runtime_extrinsics_count",
-			help: "number of extrinsics in the block, labeled by signature type.",
-			labelNames: ["type", "chain"]
-		})
-		this.palletSize = new PromClient.Gauge({
-			name: "runtime_pallet_size",
-			help: "entire storage size of a pallet, in bytes.",
-			labelNames: ["pallet", "item", "chain"]
-		})
-		// timestamp
-		 this.timestampMetric = new PromClient.Gauge({
-		name: "runtime_timestamp_seconds",
-		help: "timestamp of the block.",
-		})
-
-		// election-provider-multi-phase
-		this.multiPhaseUnsignedSolutionMetric = new PromClient.Gauge({
-			name: "runtime_multi_phase_election_unsigned",
-			help: "Stats of the latest unsigned multi_phase submission.",
-			labelNames: ["measure", "chain"]
-		})
-
-		this.multiPhaseSignedSolutionMetric = new PromClient.Gauge({
-			name: "runtime_multi_phase_election_signed",
-			help: "Stats of the latest signed multi_phase submission.",
-			labelNames: ["measure", "chain"]
-		})
-
-		this.multiPhaseQueuedSolutionScoreMetric = new PromClient.Gauge({
-			name: "runtime_multi_phase_election_score",
-			help: "The score of any queued solution.",
-			labelNames: ["score", "chain"]
-		})
-
-		this.multiPhaseSnapshotMetric = new PromClient.Gauge({
-			name: "runtime_multi_phase_election_snapshot",
-			help: "Size of the latest multi_phase election snapshot.",
-			labelNames: [ "chain"]
-
-		})
-
-		registry.registerMetric(this.finalizedHead);
-		registry.registerMetric(this.blockWeight);
-		registry.registerMetric(this.blockLength);
-		registry.registerMetric(this.numExtrinsics);
-		registry.registerMetric(this.palletSize);
-
-		registry.registerMetric(this.timestampMetric);
-
-		registry.registerMetric(this.multiPhaseUnsignedSolutionMetric);
-		registry.registerMetric(this.multiPhaseSignedSolutionMetric);
-		registry.registerMetric(this.multiPhaseQueuedSolutionScoreMetric);
-		registry.registerMetric(this.multiPhaseSnapshotMetric);
-
-	}
-
-	async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
-		console.log('chain', chainName, 'block', header.number.toNumber());
-		this.finalizedHead.set({ chain: chainName }, header.number.toNumber());
-
-		const weight = await api.query.system.blockWeight();
-		this.blockWeight.set({ class: "normal", chain: chainName }, weight.normal.toNumber());
-		this.blockWeight.set({ class: "operational", chain: chainName }, weight.operational.toNumber());
-		this.blockWeight.set({ class: "mandatory", chain: chainName }, weight.mandatory.toNumber());
-
-		const block = await api.rpc.chain.getBlock(header.hash);
-		this.blockLength.set({ chain: chainName }, block.block.encodedLength);
-
-		const signedLength = block.block.extrinsics.filter((ext) => ext.isSigned).length
-		const unsignedLength = block.block.extrinsics.length - signedLength;
-
-		this.numExtrinsics.set({ type: "signed", chain: chainName }, signedLength);
-		this.numExtrinsics.set({ type: "unsigned", chain: chainName }, unsignedLength);
-
-		let number = header.number;
-		logger.info(`starting block metric scrape at #${number}`)
-		const [ timestamp, signed_block] = await Promise.all([
-			api.query.timestamp.now(),
-			api.rpc.chain.getBlock(header.hash)
-		]);
-
-		this.timestampMetric.set(timestamp.toNumber() / 1000);
-
-		await this.multiPhasePerBlock(api, signed_block, chainName);
-	}
-
-	async perDay(api: ApiPromise, chainName: string) {
-		for (let pallet of api.runtimeMetadata.asV14.pallets) {
-			const storage = pallet.storage.unwrapOrDefault();
-			const prefix = storage.prefix;
-			for (let item of storage.items) {
-				const x = xxhashAsHex(prefix.toString(), 128);
-				const y = xxhashAsHex(item.name.toString(), 128);
-				const key = `${x}${y.slice(2)}`;
-				const size = await api.rpc.state.getStorageSize(key);
-				logger.info(`size if ${prefix.toString()}/${item.name.toString()}: ${size.toNumber()}`)
-				this.palletSize.set({ pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
-			}
-		}
-	}
-
-	async perHour(api: ApiPromise, chainName: string) { }
-
-	async  multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock, chainName: string) {
-		// check if we had an election-provider solution in this block.
-		for (let ext of signedBlock.block.extrinsics) {
-			if (ext.method.section.toLowerCase().includes("electionprovider") && ext.method.method === "submitUnsigned") {
-				let length = ext.encodedLength;
-				let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber();
-				logger.debug(`detected submitUnsigned`);
-				this.multiPhaseSignedSolutionMetric.set({ 'measure': 'weight', chain: chainName }, weight);
-				this.multiPhaseSignedSolutionMetric.set({ 'measure': 'length', chain: chainName }, length);
-			}
-	
-			if (ext.method.section.toLowerCase().includes("electionprovider") && ext.method.method === "submit") {
-				let length = ext.encodedLength;
-				let weight = (await api.rpc.payment.queryInfo(ext.toHex())).weight.toNumber()
-				logger.debug(`detected submit`);
-				this.multiPhaseUnsignedSolutionMetric.set({ 'measure': 'weight', chain: chainName }, weight);
-				this.multiPhaseUnsignedSolutionMetric.set({ 'measure': 'length', chain: chainName }, length);
-			}
-		}
-	
-		// If this is the block at which signed phase has started:
-		let events = await api.query.system.events();
-		if (events.filter((ev) => ev.event.method.toString() == "SignedPhaseStarted").length > 0) {
-			let key = api.query.electionProviderMultiPhase.snapshot.key();
-			let size = await api.rpc.state.getStorageSize(key);
-			logger.debug(`detected SignedPhaseStarted, snap size: ${size.toHuman()}`)
-			this.multiPhaseSnapshotMetric.set({ chain: chainName }, size.toNumber());
-		}
-	
-		if (events.filter((ev) => ev.event.method.toString() == "SolutionStored").length > 0) {
-			let queued = await api.query.electionProviderMultiPhase.queuedSolution();
-			logger.debug(`detected SolutionStored: ${queued.unwrapOrDefault().toString()}`)
-			this.multiPhaseQueuedSolutionScoreMetric.set({ score: "x1", chain: chainName }, queued.unwrapOrDefault().score.minimalStake.div(decimals(api)).toNumber())
-			this.multiPhaseQueuedSolutionScoreMetric.set({ score: "x2", chain: chainName }, queued.unwrapOrDefault().score.sumStake.div(decimals(api)).toNumber())
-		}
-	}
-
-}
-
-
-class BalancesExporter implements Exporter {
-	palletIdentifier: any;
-	totalIssuanceMetric: PromClient.Gauge<"class" | "chain">;
-
-	constructor(registry: PromClient.Registry) {
-		this.palletIdentifier = "balances";
-
-		// balances
-		this.totalIssuanceMetric = new PromClient.Gauge({
-			name: "runtime_total_issuance",
-			help: "the total issuance of the runtime, updated per block",
-			labelNames: ["type", "chain"]
-
-		})
-
-		registry.registerMetric(this.totalIssuanceMetric);
-	
-	}
-
-	async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
-		console.log('balances', chainName)
-		// update issuance
-		let issuance = (await api.query.balances.totalIssuance()).toBn();
-		// @ts-ignore
-		let issuancesScaled = issuance.div(decimals(api));
-		this.totalIssuanceMetric.set({ chain: chainName },issuancesScaled.toNumber())
-	}
-
-	async perDay(api: ApiPromise, chainName: string) {
-	
-	}
-
-	async perHour(api: ApiPromise, chainName: string) { }
-}
-
-class TransactionPaymentExporter implements Exporter {
-	palletIdentifier: any;
-	weightMultiplierMetric: PromClient.Gauge<"class" | "chain">;
-
-	constructor(registry: PromClient.Registry) {
-		this.palletIdentifier = "transactionPayment";
-
-		// transaction payment
-		this.weightMultiplierMetric = new PromClient.Gauge({
-			name: "runtime_weight_to_fee_multiplier",
-			help: "The weight to fee multiplier, in number.",
-			labelNames: ["type", "chain"]
-
-		})
-
-		registry.registerMetric(this.weightMultiplierMetric);
-	
-	}
-
-	async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
-		console.log('transactionPayment', chainName)
-		let weightFeeMultiplier = await api.query.transactionPayment.nextFeeMultiplier()
-		this.weightMultiplierMetric.set({ chain: chainName },weightFeeMultiplier.mul(new BN(100)).div(new BN(10).pow(new BN(18))).toNumber())
-	
-	}
-
-	async perDay(api: ApiPromise, chainName: string) {
-	
-	}
-
-	async perHour(api: ApiPromise, chainName: string) { }
-}
-
-class StakingExporter implements Exporter {
-	palletIdentifier: any;
-
-	nominatorCountMetric: PromClient.Gauge<"type" | "chain">;
-	validatorCountMetric: PromClient.Gauge<"type" | "chain">;
-	stakeMetric: PromClient.Gauge<"type" | "chain">;
-	ledgerMetric: PromClient.Gauge<"type" | "chain">;
-
-	voterListBags: PromClient.Gauge<"type" | "chain">;
-	voterListNodesPerBag: PromClient.Gauge<"bag" | "chain">;
-	voterListNodes: PromClient.Gauge<"type" | "chain">;
-
-	constructor(registry: PromClient.Registry) {
-		this.palletIdentifier = "staking";
-
-	// staking
-	this.nominatorCountMetric = new PromClient.Gauge({
-		name: "runtime_nominator_count",
-		help: "Total number of nominators in staking system",
-		labelNames: ["type", "chain"]
-	})
-
-	this.validatorCountMetric = new PromClient.Gauge({
-		name: "runtime_validator_count",
-		help: "Total number of validators in staking system",
-		labelNames: ["type", "chain"]
-	})
-
-	this.stakeMetric = new PromClient.Gauge({
-		name: "runtime_stake",
-		help: "Total amount of staked tokens",
-		labelNames: ["type", "chain"]
-	})
-
-	this.ledgerMetric = new PromClient.Gauge({
-		name: "runtime_staking_ledger",
-		help: "the entire staking ledger data",
-		labelNames: ["type", "chain"]
-	})
-
-	// bags-list pallet.
-	this.voterListBags = new PromClient.Gauge({
-		name: "runtime_voter_list_bags",
-		help: "number of voter list bags",
-		labelNames: ["type"] // active or empty
-	})
-
-	this.voterListNodesPerBag = new PromClient.Gauge({
-		name: "runtime_voter_list_node_per_bag",
-		help: "number of nodes per bag",
-		labelNames: ["bag"],
-
-	})
-
-	this.voterListNodes = new PromClient.Gauge({
-		name: "runtime_voter_list_nodes",
-		help: "number of nodes in the voter list",
-		labelNames: ["type"] // node or needs-rebag
-	})
-
-
-		registry.registerMetric(this.nominatorCountMetric);
-		registry.registerMetric(this.validatorCountMetric);
-		registry.registerMetric(this.stakeMetric);
-		registry.registerMetric(this.ledgerMetric);
-
-		registry.registerMetric(this.voterListBags);
-		registry.registerMetric(this.voterListNodesPerBag);
-		registry.registerMetric(this.voterListNodes);
-
-	}
-
-	async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
-		console.log('chain', chainName, '- block staking module', header.number.toNumber());
-		this.validatorCountMetric.set({ type: "intention", chain: chainName }, (await api.query.staking.counterForValidators()).toNumber());
-		this.nominatorCountMetric.set({ type: "intention", chain: chainName }, (await api.query.staking.counterForNominators()).toNumber());
-
-	}
-
-	async perDay(api: ApiPromise, chainName: string) {
-		logger.info(`starting daily scrape at ${new Date().toISOString()}`)
-		let stakingPromise = this.stakingDaily(api, chainName);
-		
-		Promise.all([stakingPromise])
-	}
-
-	async perHour(api: ApiPromise, chainName: string) { 
-		logger.info(`starting hourly scrape at ${new Date().toISOString()}`)
-
-		let stakingPromise = this.stakingHourly(api, chainName);
-		let voterBagsPromise = this.voterBags(api, chainName);
-		Promise.all([stakingPromise, voterBagsPromise])
-	}
-	
-	async stakingHourly(baseApi: ApiPromise, chainName: string) {
-		const api = await getFinalizedApi(baseApi);
-		let currentEra = (await api.query.staking.currentEra()).unwrapOrDefault();
-		let exposures = await api.query.staking.erasStakers.entries(currentEra);
-	
-		let totalSelfStake = exposures.map(([_, expo]) => expo.own.toBn().div(decimals(api)).toNumber()).reduce((prev, next) => prev + next);
-		let totalOtherStake = exposures.map(([_, expo]) => (expo.total.toBn().sub(expo.own.toBn())).div(decimals(api)).toNumber()).reduce((prev, next) => prev + next);
-		let totalStake = totalOtherStake + totalSelfStake;
-	
-		this.stakeMetric.set({ type: "self", chain: chainName }, totalSelfStake);
-		this.stakeMetric.set({ type: "other", chain: chainName }, totalOtherStake);
-		this.stakeMetric.set({ type: "all", chain: chainName }, totalStake);
-	
-		let totalExposedNominators = exposures.map(([_, expo]) => expo.others.length).reduce((prev, next) => prev + next);
-		let totalExposedValidators = exposures.length;
-	
-		this.validatorCountMetric.set({ type: "active", chain: chainName }, totalExposedValidators);
-		this.nominatorCountMetric.set({ type: "active", chain: chainName }, totalExposedNominators);
-	}
-
-	async  stakingDaily(baseApi: ApiPromise, chainName: string) {
-		const api = await getFinalizedApi(baseApi);
-		logger.debug(`starting staking daily process.`);
-		let ledgers = await api.query.staking.ledger.entries();
-	
-		let totalBondedAccounts = ledgers.length;
-		let totalBondedStake = ledgers.map(([_, ledger]) =>
-			ledger.unwrapOrDefault().total.toBn().div(decimals(api)).toNumber()
-		).reduce((prev, next) => prev + next)
-		let totalUnbondingChunks = ledgers.map(([_, ledger]) => {
-			if (ledger.unwrapOrDefault().unlocking.length) {
-				return ledger.unwrapOrDefault().unlocking.map((unlocking) =>
-					unlocking.value.toBn().div(decimals(api)).toNumber()
-				).reduce((prev, next) => prev + next)
-			} else {
-				return 0
-			}
-		}
-		).reduce((prev, next) => prev + next)
-	
-		this.ledgerMetric.set({ type: "bonded_accounts", chain: chainName }, totalBondedAccounts)
-		this.ledgerMetric.set({ type: "bonded_stake", chain: chainName }, totalBondedStake)
-		this.ledgerMetric.set({ type: "unbonding_stake", chain: chainName }, totalUnbondingChunks)
-	}
-
-	async  voterBags(baseApi: ApiPromise, chainName: string) {
-		const api = await getFinalizedApi(baseApi);
-	
-		interface Bag {
-			head: AccountId,
-			tail: AccountId,
-			upper: Balance,
-			nodes: AccountId[],
-		}
-	
-		async function needsRebag(
-			api: ApiDecoration<"promise">,
-			bagThresholds: BN[],
-			node: PalletBagsListListNode,
-		): Promise<boolean> {
-			const currentWeight = await correctWeightOf(node, api);
-			const canonicalUpper = bagThresholds.find((t) => t.gt(currentWeight)) || new BN("18446744073709551615");
-			if (canonicalUpper.gt(node.bagUpper)) {
-				return true
-			} else if (canonicalUpper.lt(node.bagUpper)) {
-				// this should ALMOST never happen: we handle all rebags to lower accounts, except if a
-				// slash happens.
-				return true
-			} else {
-				// correct spot.
-				return false
-			}
-		}
-	
-		async function correctWeightOf(node: PalletBagsListListNode, api: ApiDecoration<"promise">): Promise<BN> {
-			const currentAccount = node.id;
-			const currentCtrl = (await api.query.staking.bonded(currentAccount)).unwrap();
-			return (await api.query.staking.ledger(currentCtrl)).unwrapOrDefault().active.toBn()
-		}
-	
-		if ( api.query['bagsList']) {
-
-			let entries = await api.query.bagsList.listBags.entries();
-		
-			const bags: Bag[] = [];
-			const needRebag: AccountId[] = [];
-			const bagThresholds = api.consts.bagsList.bagThresholds.map((x) => baseApi.createType('Balance', x));
-		
-			entries.forEach(([key, bag]) => {
-				if (bag.isSome && bag.unwrap().head.isSome && bag.unwrap().tail.isSome) {
-					const head = bag.unwrap().head.unwrap();
-					const tail = bag.unwrap().tail.unwrap();
-					const keyInner = key.args[0];
-					const upper = baseApi.createType('Balance', keyInner.toBn());
-					bags.push({ head, tail, upper, nodes: [] })
-				}
-			});
-		
-			console.log(`🧾 collected a total of ${bags.length} active bags.`)
-			bags.sort((a, b) => a.upper.cmp(b.upper));
-		
-			let counter = 0;
-			for (const { head, tail, upper, nodes } of bags) {
-				// process the bag.
-				let current = head;
-				let cond = true
-				while (cond) {
-					const currentNode = (await api.query.bagsList.listNodes(current)).unwrap();
-					if (await needsRebag(api, bagThresholds, currentNode)) {
-						needRebag.push(currentNode.id);
-					}
-					nodes.push(currentNode.id);
-					if (currentNode.next.isSome) {
-						current = currentNode.next.unwrap()
-					} else {
-						cond = false
-					}
-				}
-				counter += nodes.length;
-				this.voterListNodesPerBag.set({ "bag": upper.toString(), chain: chainName }, nodes.length)
-				console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
-			}
-		
-			this.voterListBags.set({ type: "active", chain: chainName}, bags.length)
-			this.voterListBags.set({ type: "empty", chain: chainName}, bagThresholds.length);
-		
-			this.voterListNodes.set({ type: "all_nodes", chain: chainName}, counter);
-			this.voterListNodes.set({ type: "needs_rebag", chain: chainName }, needsRebag.length);
-		
-			console.log(`📊 total count of nodes: ${counter}`);
-			console.log(`..of which ${needRebag.length} need a rebag`);
-		}
-	}
-}
-
-// 15 mins, instead of the default 1min.
-const DEFAULT_TIMEOUT = 15 * 60 * 1000;
-
-export const logger = winston.createLogger({
-	level: process.env.LOG_LEVEL || 'debug',
-	format: winston.format.combine(
-		winston.format.colorize(),
-		winston.format.colorize({
-		}),
-		winston.format.timestamp({
-			format: 'YY-MM-DD HH:MM:SS'
-		}),
-		winston.format.printf(
-			(info) => `[${info.timestamp}] ${info.level}: ${info.message}`
-		)
-	),
-	transports: [new winston.transports.Console()]
-})
-
-async function getFinalizedApi(api: ApiPromise): Promise<ApiDecoration<"promise">> {
+export async function getFinalizedApi(api: ApiPromise): Promise<ApiDecoration<"promise">> {
 	const finalized = await api.rpc.chain.getFinalizedHead();
 	return await api.at(finalized)
 }
 
-const WS_PROVIDER = process.env.WS_PROVIDER || "ws://localhost:9999";
 const PORT = process.env.PORT || 8080;
 
-console.log(`+ WS_PROVIDER = ${WS_PROVIDER}`)
 console.log(`+ PORT = ${PORT}`)
 
 const SECONDS = 1000;
@@ -554,53 +49,64 @@ const HOURS = 60 * MINUTES;
 // TODO: counter of bag nodes matching
 // TODO: pools: TVL, num pools, num-members, points to balance-ratio of each pool
 
-// TODO: this should not be a global object once this refactor is done.
 const registry = new PromClient.Registry();
 registry.setDefaultLabels({
 	app: 'runtime-metrics'
 })
 
-function decimals(api: ApiDecoration<"promise">): BN {
+export function decimals(api: ApiDecoration<"promise">): BN {
+	try {
 	return new BN(Math.pow(10, api.registry.chainDecimals[0]))
+	}
+	catch (error) {
+		console.log('function decimals error',error)
+		return new BN(0);
+	}
 }
 
 async function main() {
 
-	const mychains = parachains;
-	if (mychains.length) {
-		logger.info(`connecting to chains ${mychains}`);
-		const exporters = [new SystemExporter(registry), 
-						new StakingExporter(registry), 
-						new BalancesExporter(registry),
-						new TransactionPaymentExporter(registry)]
+	try {			
 
-		for (let chain of mychains) {
-			logger.info(`connecting to chain ${chain}`);
-			const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
-			const api = await ApiPromise.create({ provider });
-			const chainName = await api.rpc.system.name();
-			logger.info(`connected to chain ${chainName}`);
+		if (parachains.length) {
+			const exporters = [new SystemExporter(registry), 
+							new StakingExporter(registry), 
+							new BalancesExporter(registry),
+							new TransactionPaymentExporter(registry),
+							new StakingMinerAccountExporter(registry),
+							new XCMTransfersExporter(registry),
+							new PalletsMethodsExporter(registry),
+						]
 
-			// TODO: all of the async operations could potentially be double-checked for sensibility,
-			// and improved. Also, more things can be parallelized here with Promise.all.
-			for (let exporter of exporters) {
-				logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
-				if ( api.query[exporter.palletIdentifier]) {
-					logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
-					const _perHour = setInterval(() => exporter.perHour(api, chainName.toString()), 60 * MINUTES);
-					const _perDay = setInterval(() => exporter.perDay(api, chainName.toString()), 24 * HOURS);
-					const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => exporter.perBlock(api, header, chainName.toString()));
-				} else {
-					logger.info(`Pallet ${exporter.palletIdentifier} not supported for chain ${chainName}`);
+				for (let chain of parachains) {
+					logger.info(`connecting to chain ${chain}`);
+					const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
+					const api = await ApiPromise.create({ provider });
+					const chainName = await api.rpc.system.chain();
+					
+					// TODO: all of the async operations could potentially be double-checked for sensibility,
+					// and improved. Also, more things can be parallelized here with Promise.all.
+					for (let exporter of exporters) {
+						logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
+						if ( api.query[exporter.palletIdentifier]) {
+							logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
+							const _perHour = setInterval(() => exporter.perHour(api, chainName.toString()), 60 * MINUTES);
+							const _perDay = setInterval(() => exporter.perDay(api, chainName.toString()), 24 * HOURS);
+							const _perBlock = await api.rpc.chain.subscribeFinalizedHeads((header) => exporter.perBlock(api, header, chainName.toString()));
+						} else {
+							logger.info(`Pallet ${exporter.palletIdentifier} not supported for chain ${chainName}`);
+						}
+					}
 				}
-			}
 		}
-	}
-	else {
-		logger.info(`parachains.json file is empty, please add at least one rpc address:\n
-		Example: ["wss://kusama-runtime-exporter-node.parity-chains.parity.io",
-				wss://polkadot-runtime-exporter-node.parity-chains.parity.io"]\n`);
-		process.exit();
+		else {
+			logger.info(`parachains.json file is empty, please add at least one rpc address:\n
+			Example: ["wss://kusama-runtime-exporter-node.parity-chains.parity.io",
+					wss://polkadot-runtime-exporter-node.parity-chains.parity.io"]\n`);
+			process.exit();
+		}
+	} catch(error) {
+		logger.debug(`error from main function ${error}`);
 	}
 }
 
