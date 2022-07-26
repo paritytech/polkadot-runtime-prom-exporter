@@ -1,12 +1,17 @@
 import { parentPort, workerData } from 'worker_threads';
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import { config } from "dotenv";
+
+config();
+
+const connectionString = process.env.TSDB_CONN || "";
 
 const Sequelize = require('sequelize')
-const sequelize = new Sequelize('postgres://postgres:admin123@localhost:5432/tsdb',
+const sequelize = (connectionString != "") ? new Sequelize(connectionString,
   {
     dialect: 'postgres',
     protocol: 'postgres',
-  })
+  }) : null;
 
 export async function writeToPalletsMethodsCalls(myTime: number, mySection: string, myMethod: string,
   myChain: string, myIsSigned: boolean, myCalls: number) {
@@ -41,6 +46,7 @@ async function loadHistory(threadsNumber: number, defaultTimeOut: number, starti
     const provider = new WsProvider(chain, 1000, {}, defaultTimeOut);
     var api = await ApiPromise.create({ provider });
 
+    console.log(startingBlock, startingBlock.toString(), blockLimit, blockLimit.toString())
     const chainName = await (await api.rpc.system.chain()).toString();
 
     for (let indexBlock = startingBlock; indexBlock > blockLimit; indexBlock--) {

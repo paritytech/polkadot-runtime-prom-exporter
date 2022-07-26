@@ -16,7 +16,7 @@ export interface Exporter {
 	perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void>,
 	/// Hook executed per every hour.
 	perHour(api: ApiPromise, chainName: string): any,
-	/// Hook executed per every
+	/// Hook executed per every day
 	perDay(api: ApiPromise, chainName: string): any,
 	doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string): any
 }

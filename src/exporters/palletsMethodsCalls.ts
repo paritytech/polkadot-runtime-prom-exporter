@@ -4,11 +4,10 @@ import { Exporter } from './IExporter';
 import { ApiPromise } from "@polkadot/api";
 import { Header } from "@polkadot/types/interfaces";
 import { Worker, isMainThread } from 'worker_threads';
-import { DEFAULT_TIMEOUT } from '../index'
+import { DEFAULT_TIMEOUT, useTSDB } from '../index'
 import { writeToPalletsMethodsCalls } from '../exporters-workers/palletsMethodsCallsWorker'
 
 let allSectionMethods = new Map<string, [number, boolean, string]>();
-
 
 class PalletsMethodsExporter implements Exporter {
     palletIdentifier: any;
@@ -20,7 +19,7 @@ class PalletsMethodsExporter implements Exporter {
             app: 'runtime-metrics'
         })
 
-        this.palletIdentifier = "system";
+        this.palletIdentifier = "xcmPallet";
 
         this.methodsCallsMetric = new PromClient.Gauge({
             name: "runtime_section_method_calls_per_block",
@@ -65,8 +64,10 @@ class PalletsMethodsExporter implements Exporter {
             this.methodsCallsMetric.set({ section: (entry[0]).split('.')[0], type: sign ? 'signed' : 'unsigned', method: method, chain: chainName }, count);
             allSectionMethods.set(entry[0], [count, sign, method]);
             const timestamp = new Date().getTime();
-            writeToPalletsMethodsCalls(timestamp, (entry[0]).split('.')[0], method, 'Polkadot', sign, count)
 
+            if (useTSDB) {
+                writeToPalletsMethodsCalls(timestamp, (entry[0]).split('.')[0], method, 'Polkadot', sign, count)
+            }
         }
 
         logger.debug(`allSectionMethods.size ${allSectionMethods.size}`)
@@ -82,6 +83,8 @@ class PalletsMethodsExporter implements Exporter {
         let myStartBlock = startingBlock;
         let numberOfBlocksPerThread = (startingBlock - endingBlock) / threadsNumber;
 
+        if (!useTSDB) return;
+        
         if (isMainThread) {
 
             for (let indexThread = 0; indexThread < threadsNumber; indexThread++) {
@@ -113,4 +116,5 @@ class PalletsMethodsExporter implements Exporter {
 }
 
 export { PalletsMethodsExporter };
+
 
