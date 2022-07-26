@@ -12,6 +12,9 @@ import { StakingMinerAccountExporter } from "./exporters/stakingMinerAccount";
 import { TransactionPaymentExporter } from "./exporters/transactionPayment";
 import { StakingExporter } from "./exporters/staking";
 import { PalletsMethodsExporter } from "./exporters/palletsMethodsCalls";
+import { ElectionProviderMultiPhaseExporter } from "./exporters/electionProviderMultiPhase";
+import { TimestampExporter } from "./exporters/timestamp";
+
 import { logger } from "./logger";
 
 import parachains_load_history from './parachains_load_history.json'
@@ -20,10 +23,11 @@ import parachainsids from "./parachains-ids.json";
 
 config();
 
+export const useTSDB  = (process.env.TSDB_CONN  != "") ? true : false;
 // 30 mins, instead of the default 1min.
 export const DEFAULT_TIMEOUT = 30 * 60 * 1000;
 //number of threads to run per parachain historical loading 
-const THREADS = 10;
+const THREADS = 50;
 
 const express = require('express');
 const app = express()
@@ -74,7 +78,6 @@ const SECONDS = 1000;
 const MINUTES = 60 * SECONDS;
 const HOURS = 60 * MINUTES;
 
-// TODO: histogram of calls
 // TODO: total number of accounts
 // TODO: counter of bag nodes matching
 // TODO: pools: TVL, num pools, num-members, points to balance-ratio of each pool
@@ -104,6 +107,8 @@ async function main() {
 			new BalancesExporter(registry),
 			new TransactionPaymentExporter(registry),
 			new StakingMinerAccountExporter(registry),
+			new ElectionProviderMultiPhaseExporter(registry),
+			new TimestampExporter(registry),
 			new XCMTransfersExporter(registry),
 			new PalletsMethodsExporter(registry),
 			]
