@@ -44,7 +44,7 @@ class BalancesExporter implements Exporter {
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async doLoadHistory(threadsNumber:number, startingBlock: number, endingBlock: number, chain: string) { }
+    async doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
 
 }
 

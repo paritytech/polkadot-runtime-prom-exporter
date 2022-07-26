@@ -84,7 +84,7 @@ class PalletsMethodsExporter implements Exporter {
         let numberOfBlocksPerThread = (startingBlock - endingBlock) / threadsNumber;
 
         if (!useTSDB) return;
-        
+
         if (isMainThread) {
 
             for (let indexThread = 0; indexThread < threadsNumber; indexThread++) {

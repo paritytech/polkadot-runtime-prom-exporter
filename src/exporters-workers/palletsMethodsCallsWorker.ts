@@ -46,7 +46,6 @@ async function loadHistory(threadsNumber: number, defaultTimeOut: number, starti
     const provider = new WsProvider(chain, 1000, {}, defaultTimeOut);
     var api = await ApiPromise.create({ provider });
 
-    console.log(startingBlock, startingBlock.toString(), blockLimit, blockLimit.toString())
     const chainName = await (await api.rpc.system.chain()).toString();
 
     for (let indexBlock = startingBlock; indexBlock > blockLimit; indexBlock--) {
@@ -64,7 +63,6 @@ async function loadHistory(threadsNumber: number, defaultTimeOut: number, starti
         const [count, issigned, mymethod]: [number, boolean, string] = sectionMethods.get(sectionMethod) || [0, isSigned, method];
         sectionMethods.set(sectionMethod, [count + 1, issigned, mymethod]);
 
-        const obj = JSON.parse(ex.toString());
       });
 
       for (let entry of sectionMethods.entries()) {

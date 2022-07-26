@@ -12,7 +12,8 @@ class SystemExporter implements Exporter {
     blockLength: PromClient.Gauge<"class" | "chain">;
     numExtrinsics: PromClient.Gauge<"type" | "chain">;
     palletSize: PromClient.Gauge<"pallet" | "item" | "chain">
-   
+    specVersionning: PromClient.Gauge<"specname" | "chain">
+
     constructor(registry: PromClient.Registry) {
 
         registry.setDefaultLabels({
@@ -48,12 +49,19 @@ class SystemExporter implements Exporter {
             labelNames: ["pallet", "item", "chain"]
         })
 
+        this.specVersionning = new PromClient.Gauge({
+            name: "runtime_spec_version",
+            help: "entire storage size of a pallet, in bytes.",
+            labelNames: ["specname", "chain"]
+        })
+
         registry.registerMetric(this.finalizedHead);
         registry.registerMetric(this.blockWeight);
         registry.registerMetric(this.blockLength);
         registry.registerMetric(this.numExtrinsics);
         registry.registerMetric(this.palletSize);
-       
+        registry.registerMetric(this.specVersionning);
+
     }
 
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
@@ -81,9 +89,13 @@ class SystemExporter implements Exporter {
             api.rpc.chain.getBlock(header.hash)
         ]);
 
+        const versionDetails = await api.query.system.lastRuntimeUpgrade();
+        const obj = JSON.parse(versionDetails.toString());
+        this.specVersionning.set({ specname: obj.specName, chain: chainName }, obj.specVersion);
+
     }
 
-    async doLoadHistory(threadsNumber:number, startingBlock: number, endingBlock : number, chain: string) { }
+    async doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
 
     async perDay(api: ApiPromise, chainName: string) { }
 

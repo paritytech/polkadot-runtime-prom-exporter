@@ -27,7 +27,7 @@ export const useTSDB  = (process.env.TSDB_CONN  != "") ? true : false;
 // 30 mins, instead of the default 1min.
 export const DEFAULT_TIMEOUT = 30 * 60 * 1000;
 //number of threads to run per parachain historical loading 
-const THREADS = 50;
+const THREADS = 40;
 
 const express = require('express');
 const app = express()
@@ -41,6 +41,7 @@ export function getParachainName(mykey: string): string {
 	}
 	return mykey;
 }
+
 
 export function getParachainLoadHistoryParams(chain: string) {
 
