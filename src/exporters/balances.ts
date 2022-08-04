@@ -1,50 +1,36 @@
 import * as PromClient from "prom-client"
-import { decimals } from '../index';
 import { logger } from '../logger';
-
 import { Exporter } from './IExporter';
-import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ApiPromise } from "@polkadot/api";
 import { Header } from "@polkadot/types/interfaces";
+import { Balances } from '../workers/balancesWorker'
+import { BALANCE_WORKER_PATH } from '../workers/workersPaths'
 
-class BalancesExporter implements Exporter {
+class BalancesExporter extends Balances implements Exporter {
     palletIdentifier: any;
-    totalIssuanceMetric: PromClient.Gauge<"class" | "chain">;
+    registry: PromClient.Registry;
 
     constructor(registry: PromClient.Registry) {
+        //worker needs .js 
+        super(BALANCE_WORKER_PATH, registry, true);
+        this.registry = registry;
         this.palletIdentifier = "balances";
-
-        // balances
-        this.totalIssuanceMetric = new PromClient.Gauge({
-            name: "runtime_total_issuance",
-            help: "the total issuance of the runtime, updated per block",
-            labelNames: ["type", "chain"]
-
-        })
-
-        registry.registerMetric(this.totalIssuanceMetric);
-
     }
 
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
         // update issuance
+        const blockNumber = parseInt(header.number.toString());
+        const result = await this.doWork(this, api, blockNumber, chainName)
 
-        try {
-            let issuance = (await api.query.balances.totalIssuance()).toBn();
-            let issuancesScaled = issuance.div(decimals(api));
-            //	console.log('issuance', issuance,  'issuancesScaled',issuancesScaled, issuancesScaled.toNumber() )
-            this.totalIssuanceMetric.set({ chain: chainName }, issuancesScaled.toNumber());
-
-        } catch (error) {
-            console.log('perBlock BalanceExporter error for chain', chainName, error)
-
-        }
     }
 
     async perDay(api: ApiPromise, chainName: string) { }
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
+    }
 
 }
 

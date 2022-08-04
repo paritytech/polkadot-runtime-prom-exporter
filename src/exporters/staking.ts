@@ -1,5 +1,6 @@
 import * as PromClient from "prom-client"
-import { decimals, getFinalizedApi } from '../index';
+import {  getFinalizedApi } from '../utils';
+import { decimals } from '../utils';
 import { logger } from '../logger';
 import { Exporter } from './IExporter';
 import { ApiPromise } from "@polkadot/api";
@@ -84,8 +85,7 @@ class StakingExporter implements Exporter {
 
         let nominatorsCount = (await api.query.staking.counterForNominators()).toNumber();
         let validatorsCount = (await api.query.staking.counterForValidators()).toNumber();
-        logger.info(`nominatorsCount ${nominatorsCount}, validatorCountMetric ${validatorsCount} for chain ${chainName}`);
-
+    
         this.validatorCountMetric.set({ type: "intention", chain: chainName }, (await api.query.staking.counterForValidators()).toNumber());
         this.nominatorCountMetric.set({ type: "intention", chain: chainName }, (await api.query.staking.counterForNominators()).toNumber());
 
@@ -124,7 +124,7 @@ class StakingExporter implements Exporter {
         Promise.all([stakingPromise, voterBagsPromise])
 
     }
-    async doLoadHistory(threadsNumber:number, startingBlock: number, endingBlock : number, chain: string) { }
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
 
 
     async stakingHourly(baseApi: ApiPromise, chainName: string) {
@@ -200,7 +200,7 @@ class StakingExporter implements Exporter {
                 }
             });
 
-            console.log(`🧾 collected a total of ${bags.length} active bags.`)
+      //      console.log(`🧾 collected a total of ${bags.length} active bags.`)
             bags.sort((a, b) => a.upper.cmp(b.upper));
 
             let counter = 0;
@@ -222,7 +222,7 @@ class StakingExporter implements Exporter {
                 }
                 counter += nodes.length;
                 this.voterListNodesPerBag.set({ "bag": upper.toString(), chain: chainName }, nodes.length)
-                console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
+       //         console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
             }
 
             this.voterListBags.set({ type: "active", chain: chainName }, bags.length)
@@ -231,8 +231,8 @@ class StakingExporter implements Exporter {
             this.voterListNodes.set({ type: "all_nodes", chain: chainName }, counter);
             this.voterListNodes.set({ type: "needs_rebag", chain: chainName }, needsRebag.length);
 
-            console.log(`📊 total count of nodes: ${counter}`);
-            console.log(`..of which ${needRebag.length} need a rebag`);
+       //     console.log(`📊 total count of nodes: ${counter}`);
+       //     console.log(`..of which ${needRebag.length} need a rebag`);
         }
     }
 }

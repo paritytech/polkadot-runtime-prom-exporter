@@ -1,10 +1,9 @@
-import * as PromClient from "prom-client"
-import { decimals } from '../index';
-import { logger } from '../logger';
-
-import { Exporter } from './IExporter';
-import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ApiPromise } from "@polkadot/api";
 import { Header, SignedBlock } from "@polkadot/types/interfaces";
+import * as PromClient from "prom-client";
+import { decimals } from '../utils';
+import { logger } from '../logger';
+import { Exporter } from './IExporter';
 
 class ElectionProviderMultiPhaseExporter implements Exporter {
     palletIdentifier: any;
@@ -59,7 +58,6 @@ class ElectionProviderMultiPhaseExporter implements Exporter {
 
         } catch (error) {
             console.log('perBlock BalanceExporter error for chain', chainName, error)
-
         }
     }
 
@@ -67,7 +65,7 @@ class ElectionProviderMultiPhaseExporter implements Exporter {
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
 
     async multiPhasePerBlock(api: ApiPromise, signedBlock: SignedBlock, chainName: string) {
         // check if we had an election-provider solution in this block.
@@ -106,8 +104,6 @@ class ElectionProviderMultiPhaseExporter implements Exporter {
             this.multiPhaseQueuedSolutionScoreMetric.set({ score: "x2", chain: chainName }, queued.unwrapOrDefault().score.sumStake.div(decimals(api)).toNumber())
         }
     }
-
-
 }
 
 export { ElectionProviderMultiPhaseExporter };
