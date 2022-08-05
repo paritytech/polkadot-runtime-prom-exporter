@@ -19,5 +19,6 @@ export interface Exporter {
 	/// Hook executed per every day
 	perDay(api: ApiPromise, chainName: string): any,
 //	doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string): any
+ 	init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date): any,
 }
 

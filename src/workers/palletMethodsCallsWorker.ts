@@ -66,6 +66,10 @@ export class PalletMethods extends CTimeScaleExporter {
         }
     }
 
+    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+        await super.cleanData(api, this.palletsMethodsCallsSql, myChain, startingBlockTime, endingBlockTime)
+    }
+
     async doWork(exporter: PalletMethods, api: ApiPromise, indexBlock: number, chainName: string) {
 
         const blockHash = await api.rpc.chain.getBlockHash(indexBlock);

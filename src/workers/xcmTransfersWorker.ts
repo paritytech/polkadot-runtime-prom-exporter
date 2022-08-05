@@ -57,6 +57,12 @@ export class XCMTransfers extends CTimeScaleExporter {
         }
     }
 
+    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+       
+        await  super.cleanData(api, this.XCMTransferSql, myChain, startingBlockTime, endingBlockTime)
+    
+    }
+
     async doWork(exporter: XCMTransfers, api: ApiPromise, indexBlock: number, chainName: string) {
 
         const blockHash = await api.rpc.chain.getBlockHash(indexBlock);

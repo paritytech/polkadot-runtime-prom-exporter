@@ -18,6 +18,12 @@ class StakingMinerAccountExporter extends StakingMinerAccount implements Exporte
 
     }
 
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
+
+    }
+
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
 
         const blockNumber = parseInt(header.number.toString());

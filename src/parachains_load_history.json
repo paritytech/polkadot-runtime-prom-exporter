@@ -1,5 +1,5 @@
 {"parachains":[  
-    {"chain":"wss://rpc.polkadot.io", "startingBlock":11330335, "endingBlock": 11310335 } 
+    {"chain":"wss://rpc.polkadot.io", "startingBlock":11330335, "endingBlock": 11310335, "pallets" : "" } 
 ]}  
 
 

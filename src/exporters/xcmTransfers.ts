@@ -3,7 +3,7 @@ import { logger } from '../logger';
 import { Exporter } from './IExporter';
 import { ApiPromise } from "@polkadot/api";
 import { Header } from "@polkadot/types/interfaces";
-import { XCMTransfers} from '../workers/xcmTransfersWorker'
+import { XCMTransfers } from '../workers/xcmTransfersWorker'
 import { XCM_TRANSFERS_WORKER_PATH } from '../workers/workersPaths'
 
 class XCMTransfersExporter extends XCMTransfers implements Exporter {
@@ -14,6 +14,11 @@ class XCMTransfersExporter extends XCMTransfers implements Exporter {
         super(XCM_TRANSFERS_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "system";
+    }
+
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
@@ -25,7 +30,7 @@ class XCMTransfersExporter extends XCMTransfers implements Exporter {
 
     async perDay(api: ApiPromise, chainName: string) { }
     async perHour(api: ApiPromise, chainName: string) { }
-    async launchWorkers(threadsNumber:number, startingBlock: number, endingBlock : number, chain: string) { 
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
         super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain);
     }
 

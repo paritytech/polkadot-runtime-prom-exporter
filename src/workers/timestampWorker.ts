@@ -59,6 +59,12 @@ export class Timestamp extends CTimeScaleExporter {
         }
     }
 
+    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+       
+        await super.cleanData(api, this.timestampSql, myChain, startingBlockTime, endingBlockTime)
+    
+    }
+
     async doWork(exporter: Timestamp, api: ApiPromise, indexBlock: number, chainName: string) {
 
         const blockHash = await api.rpc.chain.getBlockHash(indexBlock);

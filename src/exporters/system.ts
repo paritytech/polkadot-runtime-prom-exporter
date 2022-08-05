@@ -9,9 +9,7 @@ import { System} from '../workers/systemWorker'
 
 class SystemExporter extends System implements Exporter {
     palletIdentifier: any;
-
     palletSize: PromClient.Gauge<"pallet" | "item" | "chain">
-
 
     constructor(registry: PromClient.Registry) {
         super(SYSTEM_WORKER_PATH, registry, true);
@@ -24,21 +22,27 @@ class SystemExporter extends System implements Exporter {
             help: "entire storage size of a pallet, in bytes.",
             labelNames: ["pallet", "item", "chain"]
         })
-      
+
         registry.registerMetric(this.palletSize);
    
+    }
+
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
+
     }
 
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
 
         const blockNumber = parseInt(header.number.toString());
         const result = await this.doWork(this, api, blockNumber, chainName)
-
         logger.info(`starting to scrap #${blockNumber}`);
-
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { 
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain);
+    }
 
     async perDay(api: ApiPromise, chainName: string) { }
 
@@ -56,8 +60,6 @@ class SystemExporter extends System implements Exporter {
                 this.palletSize.set({ chain: chainName, pallet: prefix.toString(), item: item.name.toString() }, size.toNumber());
             }
         }
-
-      
     }
 }
 

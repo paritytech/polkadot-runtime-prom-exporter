@@ -3,7 +3,7 @@ import { logger } from '../logger';
 import { Exporter } from './IExporter';
 import { ApiPromise } from "@polkadot/api";
 import { Header } from "@polkadot/types/interfaces";
-import { Timestamp} from '../workers/timestampWorker'
+import { Timestamp } from '../workers/timeStampWorker'
 import { TIMESTAMP_WORKER_PATH } from '../workers/workersPaths'
 
 class TimestampExporter extends Timestamp implements Exporter {
@@ -17,14 +17,20 @@ class TimestampExporter extends Timestamp implements Exporter {
 
     }
 
-    async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        const blockNumber = parseInt(header.number.toString());
-        const result = await this.doWork(this,api,  blockNumber, chainName);
+        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { 
+    async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
+
+        const blockNumber = parseInt(header.number.toString());
+        const result = await this.doWork(this, api, blockNumber, chainName);
+
+    }
+
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
         super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
 
     }

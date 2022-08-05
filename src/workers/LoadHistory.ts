@@ -8,10 +8,9 @@ export async function loadHistoryFromApi(exporter: any, doWorkfunc: Function, ap
             const result = await doWorkfunc(exporter, api, indexBlock, chainName);
         }
     } catch (error) {
-        console.log('perBlock BalanceExporter error for chain', chain, error);
+        console.log('loadHistoryFromApi error for chain', chain, error);
     }
 }
-
 
 export async function loadHistory(exporter: any,defaultTimeOut: number, startingBlock: number, blockLimit: number, chain: string) {
     try {

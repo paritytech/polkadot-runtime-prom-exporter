@@ -3,12 +3,11 @@ import "@polkadot/api-augment";
 import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
-import { ApiDecoration } from "@polkadot/api/types";
 import { SystemExporter, BalancesExporter, XCMTransfersExporter, StakingMinerAccountExporter, TransactionPaymentExporter, StakingExporter, PalletsMethodsExporter, ElectionProviderMultiPhaseExporter, TimestampExporter} from "./exporters";
 import { getParachainLoadHistoryParams} from './utils';
 import { logger } from "./logger";
 import parachains from "./parachains.json";
-import { DEFAULT_TIMEOUT } from './utils'
+import { DEFAULT_TIMEOUT, getTimeOfBlock, isPalletRequiredByHistoryConfig } from './utils'
 
 config();
 
@@ -54,18 +53,28 @@ async function main() {
 				const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
 				const api = await ApiPromise.create({ provider });
 				const chainName = await api.rpc.system.chain();
-				let [startingBlock, endingBlock] = getParachainLoadHistoryParams(chain.toString())
+				let [startingBlock, endingBlock, pallets] = getParachainLoadHistoryParams(chain.toString())
 				startingBlock = startingBlock.valueOf();
 				endingBlock = endingBlock.valueOf();
-			
+				const palletsArr = pallets.split(',');
+
+				const startingBlockHash = await api.rpc.chain.getBlockHash(startingBlock);
+				const startDate = await getTimeOfBlock(api,startingBlockHash.toString())
+
+				const endingingBlockHash = await api.rpc.chain.getBlockHash(endingBlock);
+				const endDate = await getTimeOfBlock(api,endingingBlockHash.toString())
+
 				for (let exporter of exporters) {
 					logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
-
+					
 					if (api.query[exporter.palletIdentifier]) {
 						logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
-						if ((startingBlock != 0) && useTSDB) {
-							logger.info(`loading history for ${exporter.palletIdentifier} exporter for chain ${chainName}`);
 
+						if ((startingBlock != 0) && useTSDB && isPalletRequiredByHistoryConfig(palletsArr, exporter.palletIdentifier)) {
+
+							logger.info(`loading history for ${exporter.palletIdentifier} exporter for chain ${chainName}`);
+							//clean data for the segments of time defined in parachains_load_history 
+							const result = await exporter.init( api, chainName.toString(), startDate, endDate);
 							const loadArchive = exporter.launchWorkers(THREADS, startingBlock, endingBlock, chain.toString())
 						}
 						const _perHour = setInterval(() => exporter.perHour(api, chainName.toString()), 1 * MINUTES);

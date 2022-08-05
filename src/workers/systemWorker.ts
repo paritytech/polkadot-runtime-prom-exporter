@@ -15,10 +15,12 @@ export class System extends CTimeScaleExporter {
     systemFinalizedSql: typeof Sequelize;
     systemWeightSql: typeof Sequelize;
     systemBLockLenghtSql: typeof Sequelize;
+    systemSpecVersionSql: typeof Sequelize;
 
     finalizedHead: any;
     blockWeight: any;
     blockLength: any;
+    specVersionning: any;
 
     withProm: boolean;
     registry: PromClient.Registry;
@@ -48,6 +50,12 @@ export class System extends CTimeScaleExporter {
             blocklength: { type: Sequelize.INTEGER },
         }, { timestamps: false, freezeTableName: true });
 
+        this.systemSpecVersionSql = sequelize.define("runtime_spec_version", {
+            time: { type: Sequelize.DATE, primaryKey: true },
+            chain: { type: Sequelize.STRING, primaryKey: true },
+            specname: { type: Sequelize.STRING, primaryKey: true },
+            version: { type: Sequelize.INTEGER },
+        }, { timestamps: false, freezeTableName: true });
 
         if (this.withProm) {
             this.finalizedHead = new PromClient.Gauge({
@@ -65,7 +73,13 @@ export class System extends CTimeScaleExporter {
                 help: "encoded length of the block in bytes.",
                 labelNames: ["class", "chain"]
             })
-
+            this.specVersionning = new PromClient.Gauge({
+                name: "runtime_spec_version",
+                help: "spec of version.",
+                labelNames: ["class", "specname", "chain"]
+            })
+    
+            registry.registerMetric(this.specVersionning);
             registry.registerMetric(this.finalizedHead);
             registry.registerMetric(this.blockWeight);
             registry.registerMetric(this.blockLength);
@@ -100,7 +114,7 @@ export class System extends CTimeScaleExporter {
             { tableName: 'runtime_weight' });
 
         if (this.withProm) {
-            this.blockWeight.set({ chain: myChain }, weight);
+            this.blockWeight.set({ class: weightClass, chain: myChain }, weight);
         }
     }
 
@@ -117,6 +131,32 @@ export class System extends CTimeScaleExporter {
         if (this.withProm) {
             this.blockLength.set({ chain: myChain }, blockLength);
         }
+    }
+
+    async writeVersion(time: number, myChain: string, version: number, specName: string, withProm: boolean) {
+
+        const result = await this.systemSpecVersionSql.create(
+            {
+                time: time,
+                chain: myChain,
+                specname: specName,
+                version: version
+            }, { fields: ['time', 'chain', 'specname', 'version'] },
+            { tableName: 'runtime_spec_version' });
+
+        if (this.withProm) {
+            this.specVersionning.set({ chain: myChain, specname:specName }, version);
+        }
+    }
+
+    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+       
+        console.log('going to clean all of this !!!')
+        await super.cleanData(api, this.systemFinalizedSql, myChain, startingBlockTime, endingBlockTime)
+        await super.cleanData(api, this.systemWeightSql, myChain, startingBlockTime, endingBlockTime)
+        await super.cleanData(api, this.systemBLockLenghtSql, myChain, startingBlockTime, endingBlockTime)
+        await super.cleanData(api, this.systemSpecVersionSql, myChain, startingBlockTime, endingBlockTime)
+    
     }
 
     async doWork(exporter: System, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -136,6 +176,10 @@ export class System extends CTimeScaleExporter {
 
         exporter.writeBlockLengthBytes(timestamp, chainName.toString(), block.block.encodedLength, exporter.withProm);
       
+        const versionDetails = await apiAt.query.system.lastRuntimeUpgrade();
+        const obj = JSON.parse(versionDetails.toString());
+        exporter.writeVersion(timestamp, chainName.toString(), obj.specVersion, obj.specName, exporter.withProm);
+
     }
 }
 

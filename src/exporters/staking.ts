@@ -1,5 +1,5 @@
 import * as PromClient from "prom-client"
-import {  getFinalizedApi } from '../utils';
+import { getFinalizedApi } from '../utils';
 import { decimals } from '../utils';
 import { logger } from '../logger';
 import { Exporter } from './IExporter';
@@ -9,34 +9,23 @@ import BN from "bn.js";
 import { ApiDecoration } from "@polkadot/api/types";
 import { AccountId, Balance, } from "@polkadot/types/interfaces/runtime"
 import { PalletBagsListListNode } from "@polkadot/types/lookup"
+import { Staking } from '../workers/stakingWorker'
+import { STAKING_WORKER_PATH } from '../workers/workersPaths'
 
-class StakingExporter implements Exporter {
+class StakingExporter extends Staking implements Exporter {
     palletIdentifier: any;
+    registry: PromClient.Registry;
 
-    nominatorCountMetric: PromClient.Gauge<"type" | "chain">;
-    validatorCountMetric: PromClient.Gauge<"type" | "chain">;
     stakeMetric: PromClient.Gauge<"type" | "chain">;
     ledgerMetric: PromClient.Gauge<"type" | "chain">;
-
     voterListBags: PromClient.Gauge<"type" | "chain">;
     voterListNodesPerBag: PromClient.Gauge<"bag" | "chain">;
     voterListNodes: PromClient.Gauge<"type" | "chain">;
 
     constructor(registry: PromClient.Registry) {
+        super(STAKING_WORKER_PATH, registry, true);
+        this.registry = registry;
         this.palletIdentifier = "staking";
-
-        // staking
-        this.nominatorCountMetric = new PromClient.Gauge({
-            name: "runtime_nominator_count",
-            help: "Total number of nominators in staking system",
-            labelNames: ["type", "chain"]
-        })
-
-        this.validatorCountMetric = new PromClient.Gauge({
-            name: "runtime_validator_count",
-            help: "Total number of validators in staking system",
-            labelNames: ["type", "chain"]
-        })
 
         this.stakeMetric = new PromClient.Gauge({
             name: "runtime_stake",
@@ -70,24 +59,24 @@ class StakingExporter implements Exporter {
             labelNames: ["type"] // node or needs-rebag
         })
 
-        registry.registerMetric(this.nominatorCountMetric);
-        registry.registerMetric(this.validatorCountMetric);
         registry.registerMetric(this.stakeMetric);
         registry.registerMetric(this.ledgerMetric);
-
         registry.registerMetric(this.voterListBags);
         registry.registerMetric(this.voterListNodesPerBag);
         registry.registerMetric(this.voterListNodes);
 
     }
 
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
+
+    }
+
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
 
-        let nominatorsCount = (await api.query.staking.counterForNominators()).toNumber();
-        let validatorsCount = (await api.query.staking.counterForValidators()).toNumber();
-    
-        this.validatorCountMetric.set({ type: "intention", chain: chainName }, (await api.query.staking.counterForValidators()).toNumber());
-        this.nominatorCountMetric.set({ type: "intention", chain: chainName }, (await api.query.staking.counterForNominators()).toNumber());
+        const blockNumber = parseInt(header.number.toString());
+        const result = await this.doWork(this, api, blockNumber, chainName);
 
     }
 
@@ -124,7 +113,11 @@ class StakingExporter implements Exporter {
         Promise.all([stakingPromise, voterBagsPromise])
 
     }
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { }
+
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain);
+
+    }
 
 
     async stakingHourly(baseApi: ApiPromise, chainName: string) {
@@ -200,7 +193,7 @@ class StakingExporter implements Exporter {
                 }
             });
 
-      //      console.log(`🧾 collected a total of ${bags.length} active bags.`)
+            //      console.log(`🧾 collected a total of ${bags.length} active bags.`)
             bags.sort((a, b) => a.upper.cmp(b.upper));
 
             let counter = 0;
@@ -222,7 +215,7 @@ class StakingExporter implements Exporter {
                 }
                 counter += nodes.length;
                 this.voterListNodesPerBag.set({ "bag": upper.toString(), chain: chainName }, nodes.length)
-       //         console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
+                //         console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
             }
 
             this.voterListBags.set({ type: "active", chain: chainName }, bags.length)
@@ -231,8 +224,8 @@ class StakingExporter implements Exporter {
             this.voterListNodes.set({ type: "all_nodes", chain: chainName }, counter);
             this.voterListNodes.set({ type: "needs_rebag", chain: chainName }, needsRebag.length);
 
-       //     console.log(`📊 total count of nodes: ${counter}`);
-       //     console.log(`..of which ${needRebag.length} need a rebag`);
+            //     console.log(`📊 total count of nodes: ${counter}`);
+            //     console.log(`..of which ${needRebag.length} need a rebag`);
         }
     }
 }

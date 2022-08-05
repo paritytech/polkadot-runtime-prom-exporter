@@ -54,6 +54,10 @@ export class Balances extends CTimeScaleExporter {
         }
     }
 
+    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+        await super.cleanData(api, this.balancesSql, myChain, startingBlockTime, endingBlockTime)
+    }
+
     async doWork(exporter: Balances, api: ApiPromise, indexBlock: number, chainName: string) {
 
         const blockHash = await api.rpc.chain.getBlockHash(indexBlock);
@@ -62,6 +66,7 @@ export class Balances extends CTimeScaleExporter {
 
         const issuance = (await apiAt.query.balances.totalIssuance()).toBn();
         const issuancesScaled = issuance.div(decimals(api)).toNumber();
+
         exporter.write(timestamp, chainName.toString(), issuancesScaled, exporter.withProm);
 
     }

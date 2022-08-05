@@ -95,6 +95,11 @@ export class StakingMinerAccount extends CTimeScaleExporter {
         }
     }
 
+    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+        await super.cleanData(api, this.stakingMinerBalanceASql, myChain, startingBlockTime, endingBlockTime)
+        await super.cleanData(api, this.stakingMinerBalanceBSql, myChain, startingBlockTime, endingBlockTime)
+    }
+
     async doWork(exporter: StakingMinerAccount, api: ApiPromise, indexBlock: number, chainName: string) {
 
         const blockHash = await api.rpc.chain.getBlockHash(indexBlock);

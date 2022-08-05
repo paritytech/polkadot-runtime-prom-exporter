@@ -6,6 +6,8 @@ import { Header } from "@polkadot/types/interfaces";
 import { Balances } from '../workers/balancesWorker'
 import { BALANCE_WORKER_PATH } from '../workers/workersPaths'
 
+const Sequelize = require('sequelize');
+
 class BalancesExporter extends Balances implements Exporter {
     palletIdentifier: any;
     registry: PromClient.Registry;
@@ -18,7 +20,7 @@ class BalancesExporter extends Balances implements Exporter {
     }
 
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
-        // update issuance
+
         const blockNumber = parseInt(header.number.toString());
         const result = await this.doWork(this, api, blockNumber, chainName)
 
@@ -27,6 +29,10 @@ class BalancesExporter extends Balances implements Exporter {
     async perDay(api: ApiPromise, chainName: string) { }
 
     async perHour(api: ApiPromise, chainName: string) { }
+
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) { 
+        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
+    }
 
     async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
         super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)

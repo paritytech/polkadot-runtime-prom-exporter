@@ -13,7 +13,7 @@ class PalletsMethodsExporter extends PalletMethods implements Exporter {
         //worker needs .js 
         super(PALLETSMETHODS_WORKER_PATH, registry, true);
         this.registry = registry;
-        this.palletIdentifier = "xcmPallet";
+        this.palletIdentifier = "system";
 
     }
 
@@ -21,6 +21,12 @@ class PalletsMethodsExporter extends PalletMethods implements Exporter {
 
         const blockNumber = parseInt(header.number.toString());
         const result = await this.doWork(this, api, blockNumber, chainName)
+
+    }
+
+    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 

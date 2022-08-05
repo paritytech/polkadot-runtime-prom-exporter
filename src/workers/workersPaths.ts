@@ -6,5 +6,7 @@ export const TRANSACTION_PAYMENTS_WORKER_PATH = '/build/workers/transactionPayme
 export const STAKING_MINER_ACCOUNT_WORKER_PATH = '/build/workers/stakingMinerAccountWorker.js';
 export const XCM_TRANSFERS_WORKER_PATH = '/build/workers/xcmTransfersWorker.js';
 export const SYSTEM_WORKER_PATH = '/build/workers/systemWorker.js';
+export const STAKING_WORKER_PATH = '/build/workers/stakingWorker.js';
+export const ELECTION_MULT_PHASE_WORKER_PATH = '/build/workers/electionProviderMultiPhaseWorker.js';
 
 
