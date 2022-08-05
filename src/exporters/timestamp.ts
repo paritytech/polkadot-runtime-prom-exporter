@@ -3,7 +3,7 @@ import { logger } from '../logger';
 import { Exporter } from './IExporter';
 import { ApiPromise } from "@polkadot/api";
 import { Header } from "@polkadot/types/interfaces";
-import { Timestamp } from '../workers/timeStampWorker'
+import { Timestamp } from '../workers/timestampWorker'
 import { TIMESTAMP_WORKER_PATH } from '../workers/workersPaths'
 
 class TimestampExporter extends Timestamp implements Exporter {
