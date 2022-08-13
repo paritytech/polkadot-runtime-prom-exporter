@@ -1,0 +1,13 @@
+ [{
+            "chain": "wss://rpc.polkadot.io",
+            "startingBlock": 11512045,
+            "endingBlock": 11511045,
+            "pallets": ""
+        },
+        {
+            "chain": "wss://kusama-rpc.polkadot.io",
+            "startingBlock": 13951344,
+            "endingBlock": 13950344,
+            "pallets": "system,nominationPools"
+        }
+]
