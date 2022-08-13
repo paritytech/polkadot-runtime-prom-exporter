@@ -199,7 +199,6 @@ class StakingExporter extends Staking implements Exporter {
                 }
             });
 
-            //      console.log(`🧾 collected a total of ${bags.length} active bags.`)
             bags.sort((a, b) => a.upper.cmp(b.upper));
 
             let counter = 0;
@@ -221,7 +220,6 @@ class StakingExporter extends Staking implements Exporter {
                 }
                 counter += nodes.length;
                 this.voterListNodesPerBag.set({ "bag": upper.toString(), chain: chainName }, nodes.length)
-                //         console.log(`👜 Bag ${upper.toHuman()} - ${nodes.length} nodes: [${head} .. -> ${head !== tail ? tail : ''}]`)
             }
 
             this.voterListBags.set({ type: "active", chain: chainName }, bags.length)
@@ -230,8 +228,6 @@ class StakingExporter extends Staking implements Exporter {
             this.voterListNodes.set({ type: "all_nodes", chain: chainName }, counter);
             this.voterListNodes.set({ type: "needs_rebag", chain: chainName }, needsRebag.length);
 
-            //     console.log(`📊 total count of nodes: ${counter}`);
-            //     console.log(`..of which ${needRebag.length} need a rebag`);
         }
     }
 }
