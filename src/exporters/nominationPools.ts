@@ -2,7 +2,7 @@ import * as PromClient from "prom-client"
 import { logger } from '../logger';
 import { Exporter } from './IExporter';
 import { Header } from "@polkadot/types/interfaces";
-import { NominationPools } from '../workers/NominationPoolsWorker'
+import { NominationPools } from '../workers/nominationPoolsWorker'
 import { NOMINATION_POOLS_WORKER_PATH } from '../workers/workersPaths'
 import '@polkadot/api-augment';
 import { ApiPromise } from '@polkadot/api';
