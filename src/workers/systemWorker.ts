@@ -1,6 +1,6 @@
 import { ApiPromise } from "@polkadot/api";
 import { config } from "dotenv";
-import {  sequelizeParams } from '../utils'
+import { sequelizeParams } from '../utils'
 import * as PromClient from "prom-client"
 import { CTimeScaleExporter } from './CTimeScaleExporter';
 import { XCM_TRANSFERS_WORKER_PATH } from './workersPaths'
@@ -23,6 +23,7 @@ export class System extends CTimeScaleExporter {
     specVersionning: any;
 
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
@@ -30,32 +31,35 @@ export class System extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.systemFinalizedSql = sequelize.define("chain_finalized_number", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            finalizednumber: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
+        if (this.withTs) {
+            this.systemFinalizedSql = sequelize.define("chain_finalized_number", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                finalizednumber: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
 
-        this.systemWeightSql = sequelize.define("runtime_weight", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            weightclass: { type: Sequelize.STRING },
-            weight: { type: Sequelize.BIGINT },
-        }, { timestamps: false, freezeTableName: true });
+            this.systemWeightSql = sequelize.define("runtime_weight", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                weightclass: { type: Sequelize.STRING },
+                weight: { type: Sequelize.BIGINT },
+            }, { timestamps: false, freezeTableName: true });
 
-        this.systemBLockLenghtSql = sequelize.define("runtime_block_length_bytes", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            blocklength: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
+            this.systemBLockLenghtSql = sequelize.define("runtime_block_length_bytes", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                blocklength: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
 
-        this.systemSpecVersionSql = sequelize.define("runtime_spec_version", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            specname: { type: Sequelize.STRING, primaryKey: true },
-            version: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
+            this.systemSpecVersionSql = sequelize.define("runtime_spec_version", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                specname: { type: Sequelize.STRING, primaryKey: true },
+                version: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
 
         if (this.withProm) {
             this.finalizedHead = new PromClient.Gauge({
@@ -78,7 +82,7 @@ export class System extends CTimeScaleExporter {
                 help: "spec of version.",
                 labelNames: ["class", "specname", "chain"]
             })
-    
+
             registry.registerMetric(this.specVersionning);
             registry.registerMetric(this.finalizedHead);
             registry.registerMetric(this.blockWeight);
@@ -89,13 +93,15 @@ export class System extends CTimeScaleExporter {
 
     async writeFinalizedNumber(time: number, myChain: string, finalizedNumber: number, withProm: boolean) {
 
-        const result = await this.systemFinalizedSql.create(
-            {
-                time: time,
-                chain: myChain,
-                finalizednumber: finalizedNumber
-            }, { fields: ['time', 'chain', 'finalizednumber'] },
-            { tableName: 'chain_finalized_number' });
+        if (this.withTs) {
+            const result = await this.systemFinalizedSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    finalizednumber: finalizedNumber
+                }, { fields: ['time', 'chain', 'finalizednumber'] },
+                { tableName: 'chain_finalized_number' });
+        }
 
         if (this.withProm) {
             this.finalizedHead.set({ chain: myChain }, finalizedNumber);
@@ -104,15 +110,16 @@ export class System extends CTimeScaleExporter {
 
     async writeWeight(time: number, myChain: string, weight: number, weightClass: string, withProm: boolean) {
 
-        const result = await this.systemWeightSql.create(
-            {
-                time: time,
-                chain: myChain,
-                weightclass: weightClass,
-                weight: weight
-            }, { fields: ['time', 'chain', 'weightclass', 'weight'] },
-            { tableName: 'runtime_weight' });
-
+        if (this.withTs) {
+            const result = await this.systemWeightSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    weightclass: weightClass,
+                    weight: weight
+                }, { fields: ['time', 'chain', 'weightclass', 'weight'] },
+                { tableName: 'runtime_weight' });
+        }
         if (this.withProm) {
             this.blockWeight.set({ class: weightClass, chain: myChain }, weight);
         }
@@ -120,13 +127,15 @@ export class System extends CTimeScaleExporter {
 
     async writeBlockLengthBytes(time: number, myChain: string, blockLength: number, withProm: boolean) {
 
-        const result = await this.systemBLockLenghtSql.create(
-            {
-                time: time,
-                chain: myChain,
-                blocklength: blockLength
-            }, { fields: ['time', 'chain', 'blocklength'] },
-            { tableName: 'runtime_block_length_bytes' });
+        if (this.withTs) {
+            const result = await this.systemBLockLenghtSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    blocklength: blockLength
+                }, { fields: ['time', 'chain', 'blocklength'] },
+                { tableName: 'runtime_block_length_bytes' });
+        }
 
         if (this.withProm) {
             this.blockLength.set({ chain: myChain }, blockLength);
@@ -135,28 +144,29 @@ export class System extends CTimeScaleExporter {
 
     async writeVersion(time: number, myChain: string, version: number, specName: string, withProm: boolean) {
 
-        const result = await this.systemSpecVersionSql.create(
-            {
-                time: time,
-                chain: myChain,
-                specname: specName,
-                version: version
-            }, { fields: ['time', 'chain', 'specname', 'version'] },
-            { tableName: 'runtime_spec_version' });
+        if (this.withTs) {
+            const result = await this.systemSpecVersionSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    specname: specName,
+                    version: version
+                }, { fields: ['time', 'chain', 'specname', 'version'] },
+                { tableName: 'runtime_spec_version' });
+        }
 
         if (this.withProm) {
-            this.specVersionning.set({ chain: myChain, specname:specName }, version);
+            this.specVersionning.set({ chain: myChain, specname: specName }, version);
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-       
-        console.log('going to clean all of this !!!')
-        await super.cleanData(api, this.systemFinalizedSql, myChain, startingBlockTime, endingBlockTime)
-        await super.cleanData(api, this.systemWeightSql, myChain, startingBlockTime, endingBlockTime)
-        await super.cleanData(api, this.systemBLockLenghtSql, myChain, startingBlockTime, endingBlockTime)
-        await super.cleanData(api, this.systemSpecVersionSql, myChain, startingBlockTime, endingBlockTime)
-    
+    async clean(myChainName: string, exporterIdentifier: string, exporterVersion: number, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await super.cleanData(this.systemFinalizedSql, myChainName, startingBlockTime, endingBlockTime);
+        await super.cleanData(this.systemWeightSql, myChainName, startingBlockTime, endingBlockTime);
+        await super.cleanData(this.systemBLockLenghtSql, myChainName, startingBlockTime, endingBlockTime);
+        await super.cleanData(this.systemSpecVersionSql, myChainName, startingBlockTime, endingBlockTime);
+
     }
 
     async doWork(exporter: System, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -165,20 +175,20 @@ export class System extends CTimeScaleExporter {
         const apiAt = await api.at(blockHash);
         let timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();
 
-        exporter.writeFinalizedNumber(timestamp, chainName.toString(), indexBlock, exporter.withProm);
+        await exporter.writeFinalizedNumber(timestamp, chainName.toString(), indexBlock, exporter.withProm);
 
         const weight = await apiAt.query.system.blockWeight();
-        exporter.writeWeight(timestamp, chainName.toString(), weight.normal.toNumber(), "normal", exporter.withProm);
-        exporter.writeWeight(timestamp, chainName.toString(), weight.operational.toNumber(), "operational", exporter.withProm);
-        exporter.writeWeight(timestamp, chainName.toString(), weight.mandatory.toNumber(), "mandatory", exporter.withProm);
+        await exporter.writeWeight(timestamp, chainName.toString(), weight.normal.toNumber(), "normal", exporter.withProm);
+        await exporter.writeWeight(timestamp, chainName.toString(), weight.operational.toNumber(), "operational", exporter.withProm);
+        await exporter.writeWeight(timestamp, chainName.toString(), weight.mandatory.toNumber(), "mandatory", exporter.withProm);
 
         const block = await api.rpc.chain.getBlock(blockHash);
 
-        exporter.writeBlockLengthBytes(timestamp, chainName.toString(), block.block.encodedLength, exporter.withProm);
-      
+        await exporter.writeBlockLengthBytes(timestamp, chainName.toString(), block.block.encodedLength, exporter.withProm);
+
         const versionDetails = await apiAt.query.system.lastRuntimeUpgrade();
         const obj = JSON.parse(versionDetails.toString());
-        exporter.writeVersion(timestamp, chainName.toString(), obj.specVersion, obj.specName, exporter.withProm);
+        await exporter.writeVersion(timestamp, chainName.toString(), obj.specVersion, obj.specName, exporter.withProm);
 
     }
 }

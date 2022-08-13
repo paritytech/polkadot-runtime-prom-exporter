@@ -9,12 +9,18 @@ import { System} from '../workers/systemWorker'
 
 class SystemExporter extends System implements Exporter {
     palletIdentifier: any;
+    exporterVersion: number;
+	exporterIdenfier: string;
+    
     palletSize: PromClient.Gauge<"pallet" | "item" | "chain">
 
     constructor(registry: PromClient.Registry) {
         super(SYSTEM_WORKER_PATH, registry, true);
         this.registry = registry;
+
         this.palletIdentifier = "system";
+        this.exporterIdenfier = "system";
+        this.exporterVersion = 1;
 
         //pallet size is calculated per hour 
         this.palletSize = new PromClient.Gauge({
@@ -27,9 +33,9 @@ class SystemExporter extends System implements Exporter {
    
     }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
+        await this.clean(chainName.toString(), this.exporterIdenfier, this.exporterVersion,startingBlockTime, endingBlockTime);
 
     }
 
@@ -37,17 +43,17 @@ class SystemExporter extends System implements Exporter {
 
         const blockNumber = parseInt(header.number.toString());
         const result = await this.doWork(this, api, blockNumber, chainName)
-        logger.info(`starting to scrap #${blockNumber}`);
+        logger.info(`starting to scrap #${blockNumber} ${chainName} ${this.exporterIdenfier}`);
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) { 
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain);
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) { 
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName);
     }
 
     async perDay(api: ApiPromise, chainName: string) { }
 
     async perHour(api: ApiPromise, chainName: string) {
-        logger.info(`starting per hour scrapping system`)
+        logger.info(`starting per hour scrapping system ${chainName}`)
 
         for (let pallet of api.runtimeMetadata.asV14.pallets) {
             const storage = pallet.storage.unwrapOrDefault();

@@ -9,18 +9,22 @@ import { ElectionProviderMultiPhase } from '../workers/electionProviderMultiPhas
 
 class ElectionProviderMultiPhaseExporter extends ElectionProviderMultiPhase implements Exporter {
     palletIdentifier: any;
+    exporterVersion: number;
+	exporterIdenfier: string;
     registry: PromClient.Registry;
 
     constructor(registry: PromClient.Registry) {
         super(ELECTION_MULT_PHASE_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "electionProviderMultiPhase";
-
+        this.exporterIdenfier = "electionProviderMultiPhase";
+        
+        this.exporterVersion = 1;
     }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
+        await this.clean(chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
@@ -35,9 +39,9 @@ class ElectionProviderMultiPhaseExporter extends ElectionProviderMultiPhase impl
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
 
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
 
     }
 

@@ -95,3 +95,46 @@ CREATE TABLE annotations_grafana_events (
   tags TEXT NULL
 );
 
+CREATE TABLE IF NOT EXISTS exporters_versions (
+  time TIMESTAMPTZ NOT NULL,
+  startingBlock INTEGER NULL,
+  endingBlock INTEGER NULL,
+  chain TEXT NOT NULL,
+  exporter TEXT NOT NULL,
+  version INTEGER NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_pool_id (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  poolid INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_members (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  members INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_total_points (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  totalpoints BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_total_balance (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  totalbalance BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_unbonding_balance (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  unbondingbalance BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_pending_rewards (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  pendingrewards BIGINT NOT NULL
+);
+

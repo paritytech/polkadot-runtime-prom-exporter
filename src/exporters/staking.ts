@@ -14,6 +14,9 @@ import { STAKING_WORKER_PATH } from '../workers/workersPaths'
 
 class StakingExporter extends Staking implements Exporter {
     palletIdentifier: any;
+    exporterVersion: number;
+	exporterIdenfier: string;
+    
     registry: PromClient.Registry;
 
     stakeMetric: PromClient.Gauge<"type" | "chain">;
@@ -25,7 +28,10 @@ class StakingExporter extends Staking implements Exporter {
     constructor(registry: PromClient.Registry) {
         super(STAKING_WORKER_PATH, registry, true);
         this.registry = registry;
+        
         this.palletIdentifier = "staking";
+        this.exporterIdenfier = "staking";
+        this.exporterVersion = 1;
 
         this.stakeMetric = new PromClient.Gauge({
             name: "runtime_stake",
@@ -67,9 +73,9 @@ class StakingExporter extends Staking implements Exporter {
 
     }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
+        await this.clean(chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
@@ -106,16 +112,16 @@ class StakingExporter extends Staking implements Exporter {
     }
 
     async perHour(api: ApiPromise, chainName: string) {
-        logger.info(`starting hourly scrape at ${new Date().toISOString()}`)
+        logger.info(`starting hourly scrape at ${new Date().toISOString()} for ${chainName}`)
 
-        let stakingPromise = this.stakingHourly(api, chainName);
-        let voterBagsPromise = this.voterBags(api, chainName);
-        Promise.all([stakingPromise, voterBagsPromise])
+        let stakingPromise =  this.stakingHourly(api, chainName);
+        let voterBagsPromise =  this.voterBags(api, chainName);
+      //  Promise.all([stakingPromise, voterBagsPromise])
 
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain);
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName);
 
     }
 

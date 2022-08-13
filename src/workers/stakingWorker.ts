@@ -21,6 +21,7 @@ export class Staking extends CTimeScaleExporter {
     validatorCountMetric: any;
 
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
@@ -28,19 +29,21 @@ export class Staking extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.nominatorCountSql = sequelize.define("runtime_nominator_count", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            nominatorcount: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
+        if (this.withTs) {
+            this.nominatorCountSql = sequelize.define("runtime_nominator_count", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                nominatorcount: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
 
-        this.validatorCountSql = sequelize.define("runtime_validator_count", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            validatorcount: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
-
+            this.validatorCountSql = sequelize.define("runtime_validator_count", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                validatorcount: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
         if (this.withProm) {
 
             // staking
@@ -64,13 +67,15 @@ export class Staking extends CTimeScaleExporter {
 
     async writeNominatorCount(time: number, myChain: string, myCount: number, withProm: boolean) {
 
-        const result = await this.nominatorCountSql.create(
-            {
-                time: time,
-                chain: myChain,
-                nominatorcount: myCount
-            }, { fields: ['time', 'chain', 'nominatorcount'] },
-            { tableName: 'runtime_nominator_count' });
+        if (this.withTs) {
+            const result = await this.nominatorCountSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    nominatorcount: myCount
+                }, { fields: ['time', 'chain', 'nominatorcount'] },
+                { tableName: 'runtime_nominator_count' });
+        }
 
         if (this.withProm) {
             this.nominatorCountMetric.set({ type: "intention", chain: myChain }, myCount);
@@ -79,13 +84,15 @@ export class Staking extends CTimeScaleExporter {
 
     async writeValidatorCount(time: number, myChain: string, myCount: number, withProm: boolean) {
 
-        const resultB = await this.validatorCountSql.create(
-            {
-                time: time,
-                chain: myChain,
-                validatorcount: myCount
-            }, { fields: ['time', 'chain', 'validatorcount'] },
-            { tableName: 'runtime_validator_count' });
+        if (this.withTs) {
+            const resultB = await this.validatorCountSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    validatorcount: myCount
+                }, { fields: ['time', 'chain', 'validatorcount'] },
+                { tableName: 'runtime_validator_count' });
+        }
 
         if (this.withProm) {
             this.validatorCountMetric.set({ chain: myChain }, myCount);
@@ -94,10 +101,10 @@ export class Staking extends CTimeScaleExporter {
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await super.cleanData(api, this.nominatorCountSql, myChain, startingBlockTime, endingBlockTime)
-        await super.cleanData(api, this.validatorCountSql, myChain, startingBlockTime, endingBlockTime)
+        await super.cleanData(this.nominatorCountSql, myChainName, startingBlockTime, endingBlockTime)
+        await super.cleanData(this.validatorCountSql, myChainName, startingBlockTime, endingBlockTime)
 
     }
 
@@ -112,8 +119,8 @@ export class Staking extends CTimeScaleExporter {
             let nominatorCount = (await apiAt.query.staking.counterForNominators()).toNumber();
             let validatorCount = (await apiAt.query.staking.counterForValidators()).toNumber();
 
-            exporter.writeValidatorCount(timestamp, chainName.toString(), validatorCount, exporter.withProm);
-            exporter.writeNominatorCount(timestamp, chainName.toString(), nominatorCount, exporter.withProm);
+            await exporter.writeValidatorCount(timestamp, chainName.toString(), validatorCount, exporter.withProm);
+            await exporter.writeNominatorCount(timestamp, chainName.toString(), nominatorCount, exporter.withProm);
 
         } catch (error) {
             logger.debug(`error with staking ${this.workerPath}`)

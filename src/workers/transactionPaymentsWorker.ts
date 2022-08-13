@@ -16,6 +16,7 @@ export class TransactionPayments extends CTimeScaleExporter {
     weightToFeeMultiplierSql: typeof Sequelize;
     weightMultiplierMetric: any;
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
@@ -23,13 +24,16 @@ export class TransactionPayments extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.weightToFeeMultiplierSql = sequelize.define("runtime_weight_to_fee_multiplier", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            weightmultiplier: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
+        if (this.withTs) {
 
+            this.weightToFeeMultiplierSql = sequelize.define("runtime_weight_to_fee_multiplier", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                weightmultiplier: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
         if (this.withProm) {
 
             this.weightMultiplierMetric = new PromClient.Gauge({
@@ -46,23 +50,25 @@ export class TransactionPayments extends CTimeScaleExporter {
 
     async write(time: number, myChain: string, weightMultiplier: number, withProm: boolean) {
 
-        const result = await this.weightToFeeMultiplierSql.create(
-            {
-                time: time,
-                chain: myChain,
-                weightmultiplier: weightMultiplier
-            }, { fields: ['time', 'chain', 'weightmultiplier'] },
-            { tableName: 'runtime_weight_to_fee_multiplier' });
+        if (this.withTs) {
+            const result = await this.weightToFeeMultiplierSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    weightmultiplier: weightMultiplier
+                }, { fields: ['time', 'chain', 'weightmultiplier'] },
+                { tableName: 'runtime_weight_to_fee_multiplier' });
+        }
 
         if (this.withProm) {
             this.weightMultiplierMetric.set({ chain: myChain }, weightMultiplier);
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-       
-        await super.cleanData(api, this.weightToFeeMultiplierSql, myChain, startingBlockTime, endingBlockTime)
-    
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await super.cleanData(this.weightToFeeMultiplierSql, myChainName, startingBlockTime, endingBlockTime)
+
     }
 
     async doWork(exporter: TransactionPayments, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -74,7 +80,7 @@ export class TransactionPayments extends CTimeScaleExporter {
         let weightFeeMultiplier = await apiAt.query.transactionPayment.nextFeeMultiplier()
 
         const weightFreeMultFormated = weightFeeMultiplier.mul(new BN(100)).div(new BN(10).pow(new BN(18))).toNumber();
-        exporter.write(timestamp, chainName.toString(), weightFreeMultFormated, exporter.withProm);
+        await exporter.write(timestamp, chainName.toString(), weightFreeMultFormated, exporter.withProm);
 
     }
 }

@@ -10,6 +10,9 @@ const Sequelize = require('sequelize');
 
 class BalancesExporter extends Balances implements Exporter {
     palletIdentifier: any;
+    exporterVersion: number;
+	exporterIdenfier: string;
+    
     registry: PromClient.Registry;
 
     constructor(registry: PromClient.Registry) {
@@ -17,6 +20,9 @@ class BalancesExporter extends Balances implements Exporter {
         super(BALANCE_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "balances";
+        this.exporterIdenfier = "balances";
+        this.exporterVersion = 1;
+        
     }
 
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
@@ -30,12 +36,13 @@ class BalancesExporter extends Balances implements Exporter {
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) { 
-        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) { 
+       
+        await this.clean(  chainName.toString(), startingBlockTime, endingBlockTime);
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
     }
 
 }

@@ -17,6 +17,7 @@ export class XCMTransfers extends CTimeScaleExporter {
     XCMTransferSql: typeof Sequelize;
     xcmTransfersMetric: any;
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
@@ -24,12 +25,16 @@ export class XCMTransfers extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.XCMTransferSql = sequelize.define("runtime_xcm_transfers", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            transferamount: { type: Sequelize.DOUBLE },
-        }, { timestamps: false, freezeTableName: true });
+        if (this.withTs) {
+
+            this.XCMTransferSql = sequelize.define("runtime_xcm_transfers", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                transferamount: { type: Sequelize.DOUBLE },
+            }, { timestamps: false, freezeTableName: true });
+        }
 
         if (this.withProm) {
             this.xcmTransfersMetric = new PromClient.Gauge({
@@ -44,23 +49,25 @@ export class XCMTransfers extends CTimeScaleExporter {
 
     async write(time: number, myChain: string, transferAmount: number, withProm: boolean) {
 
-        const result = await this.XCMTransferSql.create(
-            {
-                time: time,
-                chain: myChain,
-                transferamount: transferAmount
-            }, { fields: ['time', 'chain', 'transferamount'] },
-            { tableName: 'runtime_xcm_transfers' });
+        if (this.withTs) {
+            const result = await this.XCMTransferSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    transferamount: transferAmount
+                }, { fields: ['time', 'chain', 'transferamount'] },
+                { tableName: 'runtime_xcm_transfers' });
+        }
 
         if (this.withProm) {
             this.xcmTransfersMetric.set({ chain: myChain }, transferAmount);
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-       
-        await  super.cleanData(api, this.XCMTransferSql, myChain, startingBlockTime, endingBlockTime)
-    
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await super.cleanData(this.XCMTransferSql, myChainName, startingBlockTime, endingBlockTime)
+
     }
 
     async doWork(exporter: XCMTransfers, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -106,7 +113,6 @@ export class XCMTransfers extends CTimeScaleExporter {
                 }
 
                 exporter.write(timestamp, chainName.toString(), transferAmount, exporter.withProm);
-
             }
 
         });

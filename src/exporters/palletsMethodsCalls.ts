@@ -8,13 +8,16 @@ import { PALLETSMETHODS_WORKER_PATH } from '../workers/workersPaths'
 
 class PalletsMethodsExporter extends PalletMethods implements Exporter {
     palletIdentifier: any;
-
+    exporterVersion: number;
+	exporterIdenfier: string;
+    
     constructor(registry: PromClient.Registry) {
         //worker needs .js 
         super(PALLETSMETHODS_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "system";
-
+        this.exporterIdenfier = "palletMethodsCalls";
+        this.exporterVersion = 1;
     }
 
     async perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void> {
@@ -24,9 +27,9 @@ class PalletsMethodsExporter extends PalletMethods implements Exporter {
 
     }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await this.clean( api, chainName.toString(), startingBlockTime, endingBlockTime);
+        await this.clean(chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
@@ -34,8 +37,8 @@ class PalletsMethodsExporter extends PalletMethods implements Exporter {
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
     }
 
 }

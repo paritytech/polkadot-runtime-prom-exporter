@@ -8,17 +8,22 @@ import { TRANSACTION_PAYMENTS_WORKER_PATH } from '../workers/workersPaths'
 
 class TransactionPaymentExporter extends TransactionPayments implements Exporter {
     palletIdentifier: any;
+    exporterVersion: number;
+	exporterIdenfier: string;
+
     registry: PromClient.Registry;
 
     constructor(registry: PromClient.Registry) {
         super(TRANSACTION_PAYMENTS_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "transactionPayment";
+        this.exporterIdenfier = "transactionPayment";
+        this.exporterVersion = 1;
     }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
+        await this.clean(chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
@@ -27,8 +32,8 @@ class TransactionPaymentExporter extends TransactionPayments implements Exporter
         const result = await this.doWork(this, api, blockNumber, chainName)
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
     }
 
     async perDay(api: ApiPromise, chainName: string) { }

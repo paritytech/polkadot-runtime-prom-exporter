@@ -16,6 +16,7 @@ export class Timestamp extends CTimeScaleExporter {
     timestampMetric: any
 
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
@@ -23,13 +24,15 @@ export class Timestamp extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.timestampSql = sequelize.define("runtime_timestamp_seconds", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            timestamp: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
-
+        if (this.withTs) {
+            this.timestampSql = sequelize.define("runtime_timestamp_seconds", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                timestamp: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
         if (this.withProm) {
 
             this.timestampMetric = new PromClient.Gauge({
@@ -46,23 +49,25 @@ export class Timestamp extends CTimeScaleExporter {
 
     async write(time: number, myChain: string, timestamp: number, withProm: boolean) {
 
-        const result = await this.timestampSql.create(
-            {
-                time: time,
-                chain: myChain,
-                timestamp: timestamp
-            }, { fields: ['time', 'chain', 'timestamp'] },
-            { tableName: 'runtime_timestamp_seconds' });
+        if (this.withTs) {
+            const result = await this.timestampSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    timestamp: timestamp
+                }, { fields: ['time', 'chain', 'timestamp'] },
+                { tableName: 'runtime_timestamp_seconds' });
+        }
 
         if (this.withProm) {
             this.timestampMetric.set({ chain: myChain }, timestamp);
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-       
-        await super.cleanData(api, this.timestampSql, myChain, startingBlockTime, endingBlockTime)
-    
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+
+        await super.cleanData(this.timestampSql, myChainName, startingBlockTime, endingBlockTime)
+
     }
 
     async doWork(exporter: Timestamp, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -71,7 +76,7 @@ export class Timestamp extends CTimeScaleExporter {
         const apiAt = await api.at(blockHash);
         let timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();
 
-        exporter.write(timestamp, chainName.toString(), Math.round(timestamp / 1000), exporter.withProm);
+        await exporter.write(timestamp, chainName.toString(), Math.round(timestamp / 1000), exporter.withProm);
 
     }
 }

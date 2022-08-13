@@ -9,6 +9,8 @@ export interface Exporter {
 	/// TODO: This is fundamentally flawed, since a pallet can be renamed inside the runtime. We need a
 	/// better unique identifier for each pallet on the FRAME side.
 	palletIdentifier: any;
+	exporterVersion: any;
+	exporterIdenfier: any;
 
 	/// Hook executed per every block.
 	///
@@ -19,6 +21,6 @@ export interface Exporter {
 	/// Hook executed per every day
 	perDay(api: ApiPromise, chainName: string): any,
 //	doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string): any
- 	init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date): any,
+ 	init( chainName: string, startingBlockTime: Date, endingBlockTime: Date): any,
 }
 

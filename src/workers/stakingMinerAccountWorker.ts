@@ -22,6 +22,7 @@ export class StakingMinerAccount extends CTimeScaleExporter {
     balanceBMetric: any;
 
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
@@ -29,20 +30,23 @@ export class StakingMinerAccount extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.stakingMinerBalanceASql = sequelize.define("runtime_balance_a", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            balance: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
+        if (this.withTs) {
+
+            this.stakingMinerBalanceASql = sequelize.define("runtime_balance_a", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                balance: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
 
 
-        this.stakingMinerBalanceBSql = sequelize.define("runtime_balance_b", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            balance: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
-
+            this.stakingMinerBalanceBSql = sequelize.define("runtime_balance_b", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                balance: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
         if (this.withProm) {
 
             // balances A
@@ -67,13 +71,15 @@ export class StakingMinerAccount extends CTimeScaleExporter {
 
     async writeA(time: number, myChain: string, balance: number, withProm: boolean) {
 
-        const resultA = await this.stakingMinerBalanceASql.create(
-            {
-                time: time,
-                chain: myChain,
-                balance: balance
-            }, { fields: ['time', 'chain', 'balance'] },
-            { tableName: 'runtime_balance_a' });
+        if (this.withTs) {
+            const resultA = await this.stakingMinerBalanceASql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    balance: balance
+                }, { fields: ['time', 'chain', 'balance'] },
+                { tableName: 'runtime_balance_a' });
+        }
 
         if (this.withProm) {
             this.balanceAMetric.set({ chain: myChain }, balance);
@@ -82,22 +88,25 @@ export class StakingMinerAccount extends CTimeScaleExporter {
 
     async writeB(time: number, myChain: string, balance: number, withProm: boolean) {
 
-        const resultB = await this.stakingMinerBalanceBSql.create(
-            {
-                time: time,
-                chain: myChain,
-                balance: balance
-            }, { fields: ['time', 'chain', 'balance'] },
-            { tableName: 'runtime_balance_b' });
+        if (this.withTs) {
+
+            const resultB = await this.stakingMinerBalanceBSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    balance: balance
+                }, { fields: ['time', 'chain', 'balance'] },
+                { tableName: 'runtime_balance_b' });
+        }
 
         if (this.withProm) {
             this.balanceBMetric.set({ chain: myChain }, balance);
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-        await super.cleanData(api, this.stakingMinerBalanceASql, myChain, startingBlockTime, endingBlockTime)
-        await super.cleanData(api, this.stakingMinerBalanceBSql, myChain, startingBlockTime, endingBlockTime)
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+        await super.cleanData(this.stakingMinerBalanceASql, myChainName, startingBlockTime, endingBlockTime)
+        await super.cleanData(this.stakingMinerBalanceBSql, myChainName, startingBlockTime, endingBlockTime)
     }
 
     async doWork(exporter: StakingMinerAccount, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -112,20 +121,20 @@ export class StakingMinerAccount extends CTimeScaleExporter {
             let balanceB = (await apiAt.query.system.account(BALANCE_B_ADDRESS));
 
             if (balanceA.data.free != null) {
-                exporter.writeA(timestamp, chainName.toString(), (balanceA.data.free.toBn().div(decimals(api))).toNumber(), exporter.withProm);
+                await exporter.writeA(timestamp, chainName.toString(), (balanceA.data.free.toBn().div(decimals(api))).toNumber(), exporter.withProm);
             } else {
-                exporter.writeA(timestamp, chainName.toString(), 0, exporter.withProm);
+                await exporter.writeA(timestamp, chainName.toString(), 0, exporter.withProm);
             }
             if (balanceB.data.free != null) {
-                exporter.writeB(timestamp, chainName.toString(), (balanceB.data.free.toBn().div(decimals(api))).toNumber(), exporter.withProm);
+                await exporter.writeB(timestamp, chainName.toString(), (balanceB.data.free.toBn().div(decimals(api))).toNumber(), exporter.withProm);
             }
             else {
-                exporter.writeB(timestamp, chainName.toString(), 0, exporter.withProm);
+                await exporter.writeB(timestamp, chainName.toString(), 0, exporter.withProm);
             }
         } catch (error) {
             logger.debug(`error with stakingMinerAccount ${this.workerPath}`)
-            exporter.writeA(timestamp, chainName.toString(), 0, exporter.withProm);
-            exporter.writeB(timestamp, chainName.toString(), 0, exporter.withProm);
+            await exporter.writeA(timestamp, chainName.toString(), 0, exporter.withProm);
+            await exporter.writeB(timestamp, chainName.toString(), 0, exporter.withProm);
 
         }
 

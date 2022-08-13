@@ -1,10 +1,9 @@
 import BN from "bn.js";
 import { ApiDecoration } from "@polkadot/api/types";
-import parachains_load_history from './parachains_load_history.json'
-import parachains from "./parachains.json";
+import  parachains_load_history  from './parachains_load_history.json' 
 import parachainsids from "./parachains-ids.json";
 import { logger } from "./logger";
-import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ApiPromise } from "@polkadot/api";
 
 
 export const DEFAULT_TIMEOUT = 30 * 60 * 1000;
@@ -19,9 +18,15 @@ export const sequelizeParams = {
 	dialectOptions: {
 		useUTC: false, // for reading from database
 	},
-	timezone: '-10:00', // for writing to database
+	timezone: '-10:00', // for writing to database,
+	pool: {
+		max: 600,
+		min: 0,
+		acquire: 60000,
+		idle: 30000
+	  }
+	
 };
-
 
 export async function getTimeOfBlock(api: ApiDecoration<"promise">, blockHash: string) {
 
@@ -29,7 +34,6 @@ export async function getTimeOfBlock(api: ApiDecoration<"promise">, blockHash: s
 	return new Date(blockTime);
 
 }
-
 
 export function decimals(api: ApiDecoration<"promise">): BN {
 	try {
@@ -54,26 +58,27 @@ export function getParachainName(mykey: string): string {
 export function getParachainLoadHistoryParams(chain: string) {
 
 	let i = 0;
-	for (const [key, value] of Object.entries(parachains_load_history)) {
 
-		if (chain == value[i].chain) {
-			const startingBlock = (value[i].startingBlock);
-			const endingBlock = value[i].endingBlock;
-			const pallets = value[i].pallets
+	for (const [key, value] of Object.entries(parachains_load_history)) {
+		if (chain == value.chain) {
+			const startingBlock = (value.startingBlock);
+			const endingBlock = value.endingBlock;
+			const pallets = value.pallets
 			if ((startingBlock - endingBlock) % 100 != 0) {
 				logger.debug(`ERROR!, exit, (starting block - ending block) must be multiple of 100 in parachains_load_history.json`);
 				return [0, 0, ""] as const;
 			}
-			logger.debug(`loading historical data for chain ${value[i].chain}, starting block: ${startingBlock} , ending: ${endingBlock}`);
+			logger.debug(`found record for loading historical data for chain ${value.chain}, ${pallets}, starting at #${startingBlock}, ending at #${endingBlock}`);
 			return [startingBlock, endingBlock, pallets] as const;
 		}
 		i++;
 	}
 	logger.debug(`no parachain settings for chain ${chain} parachains_load_history.json`);
-	return [0, 0, ""] as const;
+	 return [0, 0, ""] as const;
 
 }
 
+// returns true if pallet in the load_history_config.json or is field is empty (loads all pallets when field is empty)
 export function isPalletRequiredByHistoryConfig(palletsArr: string[], palletName: string) {
 
 	let result = false;

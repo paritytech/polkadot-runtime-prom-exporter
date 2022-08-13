@@ -1,5 +1,4 @@
-import { parentPort, workerData } from 'worker_threads';
-import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ApiPromise } from "@polkadot/api";
 import { sequelizeParams } from '../utils'
 import { CTimeScaleExporter } from './CTimeScaleExporter';
 import * as PromClient from "prom-client"
@@ -15,6 +14,7 @@ export class PalletMethods extends CTimeScaleExporter {
     palletsMethodsCallsSql: typeof Sequelize;
     methodsCallsMetric: any;
     withProm: boolean;
+    withTs: boolean;
 
     registry: PromClient.Registry;
 
@@ -23,18 +23,19 @@ export class PalletMethods extends CTimeScaleExporter {
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.palletsMethodsCallsSql = sequelize.define("pallets_methods_calls", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            section: { type: Sequelize.STRING, primaryKey: true },
-            method: { type: Sequelize.STRING, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            is_signed: { type: Sequelize.BOOLEAN },
-            calls: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true }
+        if (this.withTs) {
 
-        );
-
+            this.palletsMethodsCallsSql = sequelize.define("pallets_methods_calls", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                section: { type: Sequelize.STRING, primaryKey: true },
+                method: { type: Sequelize.STRING, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                is_signed: { type: Sequelize.BOOLEAN },
+                calls: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
         if (this.withProm) {
 
             this.methodsCallsMetric = new PromClient.Gauge({
@@ -50,24 +51,26 @@ export class PalletMethods extends CTimeScaleExporter {
     async write(myTime: number, mySection: string, myMethod: string,
         myChain: string, myIsSigned: boolean, myCalls: number, withProm: boolean) {
 
-        const result = await this.palletsMethodsCallsSql.create(
-            {
-                time: myTime,
-                section: mySection,
-                method: myMethod,
-                chain: myChain,
-                is_signed: myIsSigned,
-                calls: myCalls
-            }, { fields: ['time', 'section', 'method', 'chain', 'is_signed', 'calls'] },
-            { tableName: 'pallets_methods_calls' });
+        if (this.withTs) {
+            const result = await this.palletsMethodsCallsSql.create(
+                {
+                    time: myTime,
+                    section: mySection,
+                    method: myMethod,
+                    chain: myChain,
+                    is_signed: myIsSigned,
+                    calls: myCalls
+                }, { fields: ['time', 'section', 'method', 'chain', 'is_signed', 'calls'] },
+                { tableName: 'pallets_methods_calls' });
+        }
 
         if (this.withProm) {
             this.methodsCallsMetric.set({ section: mySection, type: myIsSigned, method: myMethod, chain: myChain }, myCalls);
         }
     }
 
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-        await super.cleanData(api, this.palletsMethodsCallsSql, myChain, startingBlockTime, endingBlockTime)
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+        await super.cleanData(this.palletsMethodsCallsSql, myChainName, startingBlockTime, endingBlockTime)
     }
 
     async doWork(exporter: PalletMethods, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -90,7 +93,7 @@ export class PalletMethods extends CTimeScaleExporter {
 
         for (let entry of sectionMethods.entries()) {
             const [count, sign, method]: [number, boolean, string] = entry[1] || [0, false, ''];
-            exporter.write(timestamp, (entry[0]).split('.')[0], method, chainName, sign, count, exporter.withProm);
+            await exporter.write(timestamp, (entry[0]).split('.')[0], method, chainName, sign, count, exporter.withProm);
         }
     }
 }

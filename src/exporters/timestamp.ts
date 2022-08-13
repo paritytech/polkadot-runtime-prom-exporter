@@ -8,18 +8,22 @@ import { TIMESTAMP_WORKER_PATH } from '../workers/workersPaths'
 
 class TimestampExporter extends Timestamp implements Exporter {
     palletIdentifier: any;
+    exporterVersion: number;
+	exporterIdenfier: string;
+    
     registry: PromClient.Registry;
 
     constructor(registry: PromClient.Registry) {
         super(TIMESTAMP_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "timestamp";
-
+        this.exporterIdenfier = "timestamp";
+        this.exporterVersion = 1;
     }
 
-    async init(api: ApiPromise, chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+    async init(chainName: string, startingBlockTime: Date, endingBlockTime: Date) {
 
-        await this.clean(api, chainName.toString(), startingBlockTime, endingBlockTime);
+        await this.clean(chainName.toString(), startingBlockTime, endingBlockTime);
 
     }
 
@@ -30,8 +34,8 @@ class TimestampExporter extends Timestamp implements Exporter {
 
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain)
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
 
     }
 

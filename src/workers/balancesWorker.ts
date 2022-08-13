@@ -15,20 +15,24 @@ export class Balances extends CTimeScaleExporter {
     balancesSql: typeof Sequelize;
     totalIssuanceMetric: any;
     withProm: boolean;
+    withTs: boolean;
     registry: PromClient.Registry;
+    exportersVersionsSql: typeof Sequelize;
 
     constructor(workerPath: string, registry: PromClient.Registry, withProm: boolean) {
 
         super(workerPath);
         this.registry = registry;
         this.withProm = withProm;
+        this.withTs = (connectionString == "" ? false : true);
 
-        this.balancesSql = sequelize.define("runtime_total_issuance", {
-            time: { type: Sequelize.DATE, primaryKey: true },
-            chain: { type: Sequelize.STRING, primaryKey: true },
-            issuance: { type: Sequelize.INTEGER },
-        }, { timestamps: false, freezeTableName: true });
-
+        if (this.withTs) {
+            this.balancesSql = sequelize.define("runtime_total_issuance", {
+                time: { type: Sequelize.DATE, primaryKey: true },
+                chain: { type: Sequelize.STRING, primaryKey: true },
+                issuance: { type: Sequelize.INTEGER },
+            }, { timestamps: false, freezeTableName: true });
+        }
         if (this.withProm) {
             this.totalIssuanceMetric = new PromClient.Gauge({
                 name: "runtime_total_issuance",
@@ -41,21 +45,19 @@ export class Balances extends CTimeScaleExporter {
 
     async write(time: number, myChain: string, issuance: number, withProm: boolean) {
 
-        const result = await this.balancesSql.create(
-            {
-                time: time,
-                chain: myChain,
-                issuance: issuance
-            }, { fields: ['time', 'chain', 'issuance'] },
-            { tableName: 'runtime_total_issuance' });
+        if (this.withTs) {
+            const result = await this.balancesSql.create(
+                {
+                    time: time,
+                    chain: myChain,
+                    issuance: issuance
+                }, { fields: ['time', 'chain', 'issuance'] },
+                { tableName: 'runtime_total_issuance' });
+        }
 
         if (this.withProm) {
             this.totalIssuanceMetric.set({ chain: myChain }, issuance);
         }
-    }
-
-    async clean(api: ApiPromise, myChain: string, startingBlockTime: Date, endingBlockTime: Date) {
-        await super.cleanData(api, this.balancesSql, myChain, startingBlockTime, endingBlockTime)
     }
 
     async doWork(exporter: Balances, api: ApiPromise, indexBlock: number, chainName: string) {
@@ -67,8 +69,12 @@ export class Balances extends CTimeScaleExporter {
         const issuance = (await apiAt.query.balances.totalIssuance()).toBn();
         const issuancesScaled = issuance.div(decimals(api)).toNumber();
 
-        exporter.write(timestamp, chainName.toString(), issuancesScaled, exporter.withProm);
+        await exporter.write(timestamp, chainName.toString(), issuancesScaled, exporter.withProm);
 
+    }
+
+    async clean(myChainName: string, startingBlockTime: Date, endingBlockTime: Date) {
+        await super.cleanData(this.balancesSql, myChainName, startingBlockTime, endingBlockTime)
     }
 }
 
