@@ -38,8 +38,8 @@ class StakingMinerAccountExporter extends StakingMinerAccount implements Exporte
     async perDay(api: ApiPromise, chainName: string) { }
 
     async perHour(api: ApiPromise, chainName: string) { }
-    async launchWorkers(threadsNumber:number, startingBlock: number, endingBlock : number, chain: string, chainName: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName);
+    async launchWorkers(threadsNumber:number, startingBlock: number, endingBlock : number, chain: string, chainName: string, distanceBB: number) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName, distanceBB);
      }
 
 }

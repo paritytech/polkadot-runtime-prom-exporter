@@ -39,9 +39,9 @@ class ElectionProviderMultiPhaseExporter extends ElectionProviderMultiPhase impl
 
     async perHour(api: ApiPromise, chainName: string) { }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string, distanceBB: number) {
 
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName, distanceBB)
 
     }
 
