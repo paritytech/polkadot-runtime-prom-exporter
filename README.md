@@ -66,22 +66,20 @@ TSDB_CONN is the timescaledb connection string
 
 If you are not using TimescaleDB, leave it empty.
 
-#### parachains.json file
+#### config.json file
 
-The parachains.json file contains the list of parachains you want to monitor, and you need to specify the rpc connection string for each of them.
+The config.json file contains a section named "rpcs" with the list of parachains you want to monitor, and you need to specify the rpc connection string for each of them.
 
 For example:
 
 ```json
-[
-    "wss://rpc.polkadot.io",
-    "wss://kusama-rpc.polkadot.io"
-]
+   "rpcs": [
+        "wss://rpc.polkadot.io",
+        "wss://kusama-rpc.polkadot.io"
+    ],
 ```
 
 Will monitor Polkadot and Kusama.
-
-
 
 
 #### Install the Runtime Exporter
@@ -166,36 +164,56 @@ WantedBy=multi-user.target
 
 ### 
 
-In order to load historical data for specific metrics and parachains, you need to configure the file **parachains_load_history.json** located at *< runtime exporter dir >/src*
+In order to load historical data for specific metrics and parachains, you need to configure the section **history** of the file **config.json** located at *< runtime exporter dir >/src*
 
 Note that this file can be empty, and in this case, the Runtime Exporter will store the current ongoing data for every block, but not the history.
 
 
 For example:
 
-```sh
-[{
+```json
+    "history": [{
             "chain": "wss://rpc.polkadot.io",
             "startingBlock": 11512045,
-            "endingBlock": 11511045,
-            "pallets": ""
+            "endingBlock": 10512045,
+            "pallets": "balances",
+            "distanceBetweenBlocks": [{
+                    "pallet": "balances",
+                    "dist": 600
+                },
+                {
+                    "pallet": "nominationPools",
+                    "dist": 6000
+                }]
         },
         {
             "chain": "wss://kusama-rpc.polkadot.io",
             "startingBlock": 13951344,
             "endingBlock": 13950344,
-            "pallets": "system,nominationPools"
+            "pallets": "system,nominationPools",
+            "distanceBetweenBlocks": [{
+                    "pallet": "nominationPools",
+                    "dist": 6000
+                }]
         }
-]
+    ]
 
 ```
 
-We can see here 2 sections, each of them containing 4 parameters.
+We can see here 2 sections, each of them containing 5 parameters.
 
 * **chain**: the same rpc connection string that you defined in the parachains.json for the corresponding parachain.
 * **startingBlock**: the block to start loading history. Note that this number must be higher than the following endingBlock, as history is loaded backward.
 * **endingBlock**: the block where history will stop loading.
 * **pallets**: the list of pallets that you want to load. Every exporter that uses this pallet will be loaded. If the string is empty, then all the pallets are requested to load, meaning also all the existing exporters.
+* **distanceBetweenBlocks**: the distance between blocks when querying historical data. You can define per pallet the distance bwtween blocks. If this section is not defined, the distance between blocks will use a default value of 1.
+
+Please note that the last parameter of the config file, distanceBetweenBlocks , does not fit with all the exporters.
+For example, the palletsMethodsCalls exporter counts the total number of calls per pallet and per method and per block. So in that case, if you define a distanceBetweenBlocks parameter, you will get the count only for the selected blocks, which represent only a portion of what it should be.
+
+A good example of use could apply to the **balance**s exporter, as it is giving an instant snapshot of the total issuance amount. So whether it is collected for every block or for every 1000 blocks, the result will be the same. The effect of this parameter will be that the loading of historical record will be much faster than without.
+
+
 
 You can modify this file as many times as you want, and restart the Runtime Exporter. 
 If the same configuration is used when restarting the Runtime Exporter, and history was successfully loaded in a previous run, the Runtime Exporter will ignore the record in order avoid to load again and again the same data.
@@ -213,7 +231,7 @@ If you are a developer and add a new metric in a specific Exporter, you need to 
 
 For example, if you add a metric to the Balances Exporter (src/exporters/balances.ts), you have to change **this.exporterVersion** to 2 if it was 1.
 
-```code
+```javascript
 class BalancesExporter extends Balances implements Exporter {
     palletIdentifier: any;
     exporterVersion: number;
@@ -243,11 +261,13 @@ In order to verify that a record has been loaded from parachains_load_history.js
 ```sql
 select * from exporters_versions;
 
-            time            | startingblock | endingblock |  chain   |          exporter          | version 
-----------------------------+---------------+-------------+----------+----------------------------+---------
- 2022-08-12 21:18:35.55+02  |      11512045 |    11511045 | Polkadot | timestamp                  |       1
- 2022-08-12 21:19:46.131+02 |      11512045 |    11511045 | Polkadot | palletMethodsCalls         |       1
- 2022-08-12 21:20:11.697+02 |      11512045 |    11511045 | Polkadot | balances                   |       1
+            time            | startingblock | endingblock |  chain   |          exporter          | version | distancebb 
+----------------------------+---------------+-------------+----------+----------------------------+---------+------------
+ 2022-08-12 21:18:35.55+02  |      11512045 |    11511045 | Polkadot | timestamp                  |       1 |          1
+ 2022-08-12 21:19:46.131+02 |      11512045 |    11511045 | Polkadot | palletMethodsCalls         |       1 |          1
+ 2022-08-12 21:20:11.697+02 |      11512045 |    11511045 | Polkadot | balances                   |       1 |          1
+ 2022-08-12 21:20:19.367+02 |      11512045 |    11511045 | Polkadot | xcmTransfers               |       1 |          1
+ 2022-08-12 21:20:42.498+02 |      11512045 |    11511045 | Polkadot | transactionPayment         |       1 |          1
 
 ```
 
@@ -259,3 +279,9 @@ There are today around 40 different metrics, with 10 exporters.
 Every metric can be visualized in Grafana, either using the Prometheus database as a data source, either timescaledb, or both of them. 
 
 There is a shared list of dashboard provided in this repository, that can be found at src/grafana-dashboards with many examples of database queries and charts.
+
+
+
+
+
+

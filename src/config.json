@@ -1,0 +1,31 @@
+{
+    "rpcs": [
+        "wss://rpc.polkadot.io",
+        "wss://kusama-rpc.polkadot.io"
+    ],
+    "history": [{
+            "chain": "wss://rpc.polkadot.io",
+            "startingBlock": 11512045,
+            "endingBlock": 11412045,
+            "pallets": "balances",
+            "distanceBetweenBlocks": [{
+                    "pallet": "balances",
+                    "dist": 600
+                },
+                {
+                    "pallet": "nominationPools",
+                    "dist": 6000
+                }]
+        },
+        {
+            "chain": "wss://kusama-rpc.polkadot.io",
+            "startingBlock": 13951344,
+            "endingBlock": 13950344,
+            "pallets": "system,nominationPools",
+            "distanceBetweenBlocks": [{
+                    "pallet": "nominationPools",
+                    "dist": 6000
+                }]
+        }
+    ]
+}

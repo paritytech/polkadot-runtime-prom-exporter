@@ -32,8 +32,8 @@ class TransactionPaymentExporter extends TransactionPayments implements Exporter
         const result = await this.doWork(this, api, blockNumber, chainName)
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string, distanceBB: number) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName, distanceBB)
     }
 
     async perDay(api: ApiPromise, chainName: string) { }

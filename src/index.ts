@@ -6,13 +6,16 @@ import { config } from "dotenv";
 import { SystemExporter, BalancesExporter, XCMTransfersExporter, StakingMinerAccountExporter, TransactionPaymentExporter, StakingExporter, PalletsMethodsExporter, ElectionProviderMultiPhaseExporter, TimestampExporter, NominationPoolsExporter } from "./exporters";
 import { getParachainLoadHistoryParams } from './utils';
 import { logger } from "./logger";
-import parachains from "./parachains.json";
-import { DEFAULT_TIMEOUT, getTimeOfBlock, isPalletRequiredByHistoryConfig } from './utils'
+//import parachains from "./parachains.json";
+import parachainsList from "./config.json";
+import { DEFAULT_TIMEOUT, getTimeOfBlock, isPalletRequiredByHistoryConfig, getDistanceBetweenBlocks } from './utils'
 
 config();
 
+const parachains = parachainsList.rpcs;
+
 //number of threads to run per parachain historical loading 
-const THREADS = 2;
+const THREADS = 5;
 
 logger.debug(`Threads per exporter ${THREADS}`);
 
@@ -55,7 +58,9 @@ async function main() {
 				const api = await ApiPromise.create({ provider });
 				const chainName = await (await api.rpc.system.chain()).toString();
 
-				let [startingBlock, endingBlock, pallets] = getParachainLoadHistoryParams(chain.toString())
+				let [distanceBetweenBlocks, startingBlock, endingBlock, pallets] = getParachainLoadHistoryParams(chain.toString())
+				distanceBetweenBlocks = distanceBetweenBlocks.valueOf();
+
 				startingBlock = startingBlock.valueOf();
 				endingBlock = endingBlock.valueOf();
 				const palletsArr = pallets.split(',');
@@ -69,38 +74,44 @@ async function main() {
 				for (let exporter of exporters) {
 					logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
 
+					const distanceBB = getDistanceBetweenBlocks(distanceBetweenBlocks, exporter.exporterIdenfier);
+					console.log('distanceBB before call', distanceBB);
+
 					if (api.query[exporter.palletIdentifier]) {
 						logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
 						if ((startingBlock != 0) && useTSDB && isPalletRequiredByHistoryConfig(palletsArr, exporter.palletIdentifier)) {
 
 							logger.info(`checking upgrade for ${exporter.exporterIdenfier} exporter for chain ${chainName}`);
 
-							let historyRecords = new Map<string, [number, number, number]>();
+							let historyRecords = new Map<string, [number, number, number, number]>();
 							historyRecords = await exporter.getExportersVersionsRecords(chainName.toString(), exporter.exporterIdenfier, exporter.exporterVersion);
 
-							//checks current version against version of exporters stored in exporters_versions table and run history again for new exporters only
+							//checks current version against version of exporters stored in exporters_versions table and run history again for new versionned exporters only
 							for (let entry of historyRecords.entries()) {
-								const [startingBlock, endingBlock, version]: [number, number, number] = entry[1] || [0, 0, 0];
+
+								const [startingBlock, endingBlock, version, distBB]: [number, number, number, number] = entry[1] || [0, 0, 0, 1];
 								if ((exporter.exporterVersion > version) && (version != 0)) {
 									const startingBlockHash = await api.rpc.chain.getBlockHash(startingBlock);
 									var startDate = await getTimeOfBlock(api, startingBlockHash.toString());
 									const endingingBlockHash = await api.rpc.chain.getBlockHash(endingBlock);
 									const endDate = await getTimeOfBlock(api, endingingBlockHash.toString())
-								
+
 									logger.info(`going to clean and reload history because new exporter version was found for ${exporter.exporterIdenfier} chain ${chainName}, version ${exporter.exporterVersion} start at #${startingBlock} end at #${endingBlock}`);
 									const result = await exporter.init(chainName.toString(), startDate, endDate);
-									const loadArchive = exporter.launchWorkers(THREADS, startingBlock, endingBlock, chain.toString(), chainName.toString())
+									const loadArchive = exporter.launchWorkers(THREADS, startingBlock, endingBlock, chain.toString(), chainName.toString(), distBB)
 								}
 							}
 
 							//load history only if there is no record in exporters_versions table for the same version, startingBlock and endingBlock
-							const checkIfExists = await exporter.findExporterRecord(chainName.toString(), exporter.exporterIdenfier, exporter.exporterVersion, startingBlock, endingBlock);
+							const checkIfExists = await exporter.findExporterRecord(chainName.toString(), exporter.exporterIdenfier, exporter.exporterVersion, startingBlock, endingBlock, distanceBB);
 							if (checkIfExists == false) {
 								//clean data for the segments of time defined in parachains_load_history 
 								logger.info(`clean data and load history for exporter ${exporter.exporterIdenfier} for chain ${chainName}, version ${exporter.exporterVersion} start at #${startingBlock} end at #${endingBlock}`);
+								//const distanceBB = getDistanceBetweenBlocks(distanceBetweenBlocks, exporter.exporterIdenfier);
+								console.log('distanceBB just before call', distanceBB, exporter.exporterIdenfier);
 								const result = await exporter.init(chainName.toString(), startDate, endDate);
-								const loadArchive = exporter.launchWorkers(THREADS, startingBlock, endingBlock, chain.toString(), chainName.toString())
-						
+								const loadArchive = exporter.launchWorkers(THREADS, startingBlock, endingBlock, chain.toString(), chainName.toString(), distanceBB)
+
 							}
 							else {
 								logger.info(`skip load for exporter ${exporter.exporterIdenfier}, chain ${chainName} - historical data already stored for version ${exporter.exporterVersion} start at #${startingBlock} end at #${endingBlock}`);

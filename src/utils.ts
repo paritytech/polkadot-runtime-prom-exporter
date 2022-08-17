@@ -1,10 +1,11 @@
 import BN from "bn.js";
 import { ApiDecoration } from "@polkadot/api/types";
-import  parachains_load_history  from './parachains_load_history.json' 
+import parachainsHistory from './config.json'
 import parachainsids from "./parachains-ids.json";
 import { logger } from "./logger";
 import { ApiPromise } from "@polkadot/api";
 
+const parachainsLoadHistory = parachainsHistory.history;
 
 export const DEFAULT_TIMEOUT = 30 * 60 * 1000;
 
@@ -24,8 +25,8 @@ export const sequelizeParams = {
 		min: 0,
 		acquire: 60000,
 		idle: 30000
-	  }
-	
+	}
+
 };
 
 export async function getTimeOfBlock(api: ApiDecoration<"promise">, blockHash: string) {
@@ -55,26 +56,38 @@ export function getParachainName(mykey: string): string {
 	return mykey;
 }
 
+export function getDistanceBetweenBlocks(distanceBetweenBlocks: any, exporterName: string) {
+
+	for (const [key, value] of Object.entries(distanceBetweenBlocks)) {
+		let result = JSON.stringify(Object.values(distanceBetweenBlocks)[parseInt(key)]);
+		let obj = JSON.parse(result);
+		if (obj.pallet == exporterName) {
+			return obj.dist;
+		}
+	}
+	return 1;
+}
 export function getParachainLoadHistoryParams(chain: string) {
 
 	let i = 0;
 
-	for (const [key, value] of Object.entries(parachains_load_history)) {
+	for (const [key, value] of Object.entries(parachainsLoadHistory)) {
 		if (chain == value.chain) {
 			const startingBlock = (value.startingBlock);
 			const endingBlock = value.endingBlock;
-			const pallets = value.pallets
+			const pallets = value.pallets;
+			const distanceBetweenBlocks = value.distanceBetweenBlocks;
 			if ((startingBlock - endingBlock) % 100 != 0) {
-				logger.debug(`ERROR!, exit, (starting block - ending block) must be multiple of 100 in parachains_load_history.json`);
-				return [0, 0, ""] as const;
+				logger.debug(`ERROR!, exit, (starting block - ending block) must be multiple of 100 in config.json`);
+				return [{}, 0, 0, ""] as const;
 			}
 			logger.debug(`found record for loading historical data for chain ${value.chain}, ${pallets}, starting at #${startingBlock}, ending at #${endingBlock}`);
-			return [startingBlock, endingBlock, pallets] as const;
+			return [distanceBetweenBlocks, startingBlock, endingBlock, pallets] as const;
 		}
 		i++;
 	}
-	logger.debug(`no parachain settings for chain ${chain} parachains_load_history.json`);
-	 return [0, 0, ""] as const;
+	logger.debug(`no parachain settings for chain ${chain} config.json`);
+	return [{}, 0, 0, ""] as const;
 
 }
 
@@ -83,7 +96,7 @@ export function isPalletRequiredByHistoryConfig(palletsArr: string[], palletName
 
 	let result = false;
 	if (palletsArr[0].length > 0) {
-		palletsArr.forEach((x, i) => {  if (x === palletName) { result = true } });
+		palletsArr.forEach((x, i) => { if (x === palletName) { result = true } });
 	} else {
 		//if the array is empty then run all the exporters
 		result = true;

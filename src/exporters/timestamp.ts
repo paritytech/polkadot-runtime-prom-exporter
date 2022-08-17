@@ -34,8 +34,8 @@ class TimestampExporter extends Timestamp implements Exporter {
 
     }
 
-    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string) {
-        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName)
+    async launchWorkers(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string, chainName: string, distanceBB: number) {
+        super.launchWorkers(threadsNumber, startingBlock, endingBlock, chain, this.exporterIdenfier, this.exporterVersion, chainName, distanceBB)
 
     }
 
