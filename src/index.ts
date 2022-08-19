@@ -44,7 +44,7 @@ async function main() {
 
 		const useTSDB = (process.env.TSDB_CONN != "") ? true : false;
 
-		if (parachains.length) {
+		if (parachains && parachains.length) {
 			const exporters = [new SystemExporter(registry),
 			new StakingExporter(registry),
 			new BalancesExporter(registry),
@@ -80,7 +80,6 @@ async function main() {
 					logger.info(`connecting ${chain} to pallet ${exporter.palletIdentifier}`);
 
 					const distanceBB = getDistanceBetweenBlocks(distanceBetweenBlocks, exporter.exporterIdenfier);
-					console.log('distanceBB before call', distanceBB);
 
 					if (api.query[exporter.palletIdentifier]) {
 						logger.info(`registering ${exporter.palletIdentifier} exporter for chain ${chainName}`);
@@ -113,7 +112,6 @@ async function main() {
 								//clean data for the segments of time defined in parachains_load_history 
 								logger.info(`clean data and load history for exporter ${exporter.exporterIdenfier} for chain ${chainName}, version ${exporter.exporterVersion} start at #${startingBlock} end at #${endingBlock}`);
 								//const distanceBB = getDistanceBetweenBlocks(distanceBetweenBlocks, exporter.exporterIdenfier);
-								console.log('distanceBB just before call', distanceBB, exporter.exporterIdenfier);
 								const result = await exporter.init(chainName.toString(), startDate, endDate);
 								const loadArchive = exporter.launchWorkers(THREADS, startingBlock, endingBlock, chain.toString(), chainName.toString(), distanceBB)
 

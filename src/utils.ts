@@ -79,29 +79,32 @@ export function getParachainLoadHistoryParams(chain: string) {
 
 	let i = 0;
 
-	for (let record of parachainsLoadHistory) {
-	
-		console.log(record.startingBlock, record.distanceBetweenBlocks)
-		
-		if (chain == record.chain) {
-			const startingBlock = (record.startingBlock);
-			const endingBlock = record.endingBlock;
-			const pallets = record.pallets;
-			const distanceBetweenBlocks = record.distanceBetweenBlocks;
-			if ((startingBlock - endingBlock) % 100 != 0) {
-				logger.debug(`ERROR!, exit, (starting block - ending block) must be multiple of 100 in config.json`);
-				return [{}, 0, 0, ""] as const;
+	if (parachainsLoadHistory) {
+		for (let record of parachainsLoadHistory) {
+			if (chain == record.chain) {
+				const startingBlock = (record.startingBlock);
+				const endingBlock = record.endingBlock;
+				const pallets = record.pallets;
+				const distanceBetweenBlocks = record.distanceBetweenBlocks;
+				if ((startingBlock - endingBlock) % 100 != 0) {
+					logger.debug(`ERROR!, exit, (starting block - ending block) must be multiple of 100 in config.json`);
+					return [{}, 0, 0, ""] as const;
+				}
+				logger.debug(`found record for loading historical data for chain ${record.chain}, ${pallets}, starting at #${startingBlock}, ending at #${endingBlock}`);
+				return [distanceBetweenBlocks, startingBlock, endingBlock, pallets] as const;
 			}
-			logger.debug(`found record for loading historical data for chain ${record.chain}, ${pallets}, starting at #${startingBlock}, ending at #${endingBlock}`);
-			return [distanceBetweenBlocks, startingBlock, endingBlock, pallets] as const;
+			i++;
+
 		}
-		i++;
+
+		logger.debug(`no parachain settings for chain ${chain} config.json`);
+		return [{}, 0, 0, ""] as const;
+
+	} else {
+		logger.debug(`no parachain settings for chain ${chain} config.json`);
+		return [{}, 0, 0, ""] as const;
 
 	}
-
-	logger.debug(`no parachain settings for chain ${chain} config.json`);
-	return [{}, 0, 0, ""] as const;
-
 }
 
 // returns true if pallet in the load_history_config.json or is field is empty (loads all pallets when field is empty)
