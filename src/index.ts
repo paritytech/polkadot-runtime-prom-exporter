@@ -7,10 +7,15 @@ import { SystemExporter, BalancesExporter, XCMTransfersExporter, StakingMinerAcc
 import { getParachainLoadHistoryParams } from './utils';
 import { logger } from "./logger";
 //import parachains from "./parachains.json";
-import parachainsList from "./config.json";
+//import parachainsList from "../config.json";
 import { DEFAULT_TIMEOUT, getTimeOfBlock, isPalletRequiredByHistoryConfig, getDistanceBetweenBlocks } from './utils'
 
+
 config();
+const configFullPath = process.env.CONFIG_FULL_PATH
+const fs = require('fs');
+let parachainsListRaw = fs.readFileSync(configFullPath);
+const parachainsList = JSON.parse(parachainsListRaw);
 
 const parachains = parachainsList.rpcs;
 
@@ -58,11 +63,11 @@ async function main() {
 				const api = await ApiPromise.create({ provider });
 				const chainName = await (await api.rpc.system.chain()).toString();
 
-				let [distanceBetweenBlocks, startingBlock, endingBlock, pallets] = getParachainLoadHistoryParams(chain.toString())
+				let [distanceBetweenBlocks, startingBlock, endingBlock, pallets] = getParachainLoadHistoryParams(chain)
 				distanceBetweenBlocks = distanceBetweenBlocks.valueOf();
-
-				startingBlock = startingBlock.valueOf();
-				endingBlock = endingBlock.valueOf();
+//gilles removed valueof
+				startingBlock = startingBlock;
+				endingBlock = endingBlock;
 				const palletsArr = pallets.split(',');
 
 				const startingBlockHash = await api.rpc.chain.getBlockHash(startingBlock);

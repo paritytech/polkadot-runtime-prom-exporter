@@ -1,9 +1,17 @@
 import BN from "bn.js";
 import { ApiDecoration } from "@polkadot/api/types";
-import parachainsHistory from './config.json'
+//import parachainsHistory from './config.json'
 import parachainsids from "./parachains-ids.json";
 import { logger } from "./logger";
 import { ApiPromise } from "@polkadot/api";
+import { config } from "dotenv";
+
+
+config();
+const configFullPath = process.env.CONFIG_FULL_PATH
+const fs = require('fs');
+let parachainsHistoryRaw = fs.readFileSync(configFullPath);
+let parachainsHistory = JSON.parse(parachainsHistoryRaw);
 
 const parachainsLoadHistory = parachainsHistory.history;
 
@@ -71,21 +79,26 @@ export function getParachainLoadHistoryParams(chain: string) {
 
 	let i = 0;
 
-	for (const [key, value] of Object.entries(parachainsLoadHistory)) {
-		if (chain == value.chain) {
-			const startingBlock = (value.startingBlock);
-			const endingBlock = value.endingBlock;
-			const pallets = value.pallets;
-			const distanceBetweenBlocks = value.distanceBetweenBlocks;
+	for (let record of parachainsLoadHistory) {
+	
+		console.log(record.startingBlock, record.distanceBetweenBlocks)
+		
+		if (chain == record.chain) {
+			const startingBlock = (record.startingBlock);
+			const endingBlock = record.endingBlock;
+			const pallets = record.pallets;
+			const distanceBetweenBlocks = record.distanceBetweenBlocks;
 			if ((startingBlock - endingBlock) % 100 != 0) {
 				logger.debug(`ERROR!, exit, (starting block - ending block) must be multiple of 100 in config.json`);
 				return [{}, 0, 0, ""] as const;
 			}
-			logger.debug(`found record for loading historical data for chain ${value.chain}, ${pallets}, starting at #${startingBlock}, ending at #${endingBlock}`);
+			logger.debug(`found record for loading historical data for chain ${record.chain}, ${pallets}, starting at #${startingBlock}, ending at #${endingBlock}`);
 			return [distanceBetweenBlocks, startingBlock, endingBlock, pallets] as const;
 		}
 		i++;
+
 	}
+
 	logger.debug(`no parachain settings for chain ${chain} config.json`);
 	return [{}, 0, 0, ""] as const;
 

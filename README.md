@@ -59,10 +59,13 @@ https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
 ```sh
 PORT=8000
 TSDB_CONN='postgres://<postgres user>:<postgres password>@localhost:5432/tsdb'
+CONFIG_FULL_PATH='<the full path of config.json>'
 ```
 PORT is the prometheus connection port corresponding to your installation.
 
-TSDB_CONN is the timescaledb connection string 
+TSDB_CONN is the timescaledb connection string .
+
+CONFIG_FULL_PATH is the full path of the config.json file.
 
 If you are not using TimescaleDB, leave it empty.
 
