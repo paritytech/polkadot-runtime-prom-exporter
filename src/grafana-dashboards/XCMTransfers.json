@@ -1,857 +1,817 @@
 {
-    "annotations": {
-      "list": [
-        {
-          "builtIn": 1,
-          "datasource": {
-            "type": "grafana",
-            "uid": "-- Grafana --"
-          },
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "name": "Annotations & Alerts",
-          "target": {
-            "limit": 100,
-            "matchAny": false,
-            "tags": [],
-            "type": "dashboard"
-          },
-          "type": "dashboard"
-        }
-      ]
-    },
-    "editable": true,
-    "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
-    "id": 8,
-    "iteration": 1657295378139,
-    "links": [
-      {
-        "asDropdown": true,
-        "icon": "external link",
-        "includeVars": false,
-        "keepTime": false,
-        "tags": [
-          "dashb"
-        ],
-        "targetBlank": false,
-        "title": "Dashboards",
-        "tooltip": "",
-        "type": "dashboards",
-        "url": ""
-      }
-    ],
-    "liveNow": false,
-    "panels": [
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "description": "",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisGridShow": true,
-              "axisLabel": "",
-              "axisPlacement": "hidden",
-              "axisSoftMin": 0,
-              "fillOpacity": 80,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "lineWidth": 1,
-              "scaleDistribution": {
-                "type": "linear"
-              }
-            },
-            "mappings": [],
-            "noValue": "0",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 9,
-          "w": 17,
-          "x": 0,
-          "y": 0
-        },
-        "id": 45,
-        "options": {
-          "barRadius": 0,
-          "barWidth": 0.97,
-          "groupWidth": 0.7,
-          "legend": {
-            "calcs": [
-              "last"
-            ],
-            "displayMode": "list",
-            "placement": "right"
-          },
-          "orientation": "auto",
-          "showValue": "auto",
-          "stacking": "normal",
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          },
-          "xTickLabelRotation": 0,
-          "xTickLabelSpacing": 0
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "exemplar": true,
-            "expr": "sum by (tochain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
-            "instant": false,
-            "legendFormat": "{{label_name}}",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM transfers to chain",
-        "type": "barchart"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "description": "pallets usage",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              }
-            },
-            "mappings": []
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 9,
-          "w": 7,
-          "x": 17,
-          "y": 0
-        },
-        "id": 47,
-        "options": {
-          "displayLabels": [],
-          "legend": {
-            "displayMode": "list",
-            "placement": "right",
-            "values": [
-              "value"
-            ]
-          },
-          "pieType": "pie",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "sum by (tochain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
-            "legendFormat": "{{label_name}}",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM to chain",
-        "type": "piechart"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "description": "",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisLabel": "",
-              "axisPlacement": "hidden",
-              "axisSoftMin": 0,
-              "fillOpacity": 80,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "lineWidth": 1,
-              "scaleDistribution": {
-                "type": "linear"
-              }
-            },
-            "mappings": [],
-            "noValue": "0",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 9,
-          "w": 17,
-          "x": 0,
-          "y": 9
-        },
-        "id": 48,
-        "options": {
-          "barRadius": 0,
-          "barWidth": 0.97,
-          "groupWidth": 0.7,
-          "legend": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "displayMode": "list",
-            "placement": "right"
-          },
-          "orientation": "auto",
-          "showValue": "auto",
-          "stacking": "normal",
-          "text": {},
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          },
-          "xTickLabelRotation": 0,
-          "xTickLabelSpacing": 0
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "sum by (chain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
-            "legendFormat": "{{label_name}}",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "xcm transfers from chain",
-        "type": "barchart"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "description": "pallets usage",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              }
-            },
-            "mappings": []
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 9,
-          "w": 7,
-          "x": 17,
-          "y": 9
-        },
-        "id": 49,
-        "options": {
-          "displayLabels": [],
-          "legend": {
-            "displayMode": "list",
-            "placement": "right",
-            "values": [
-              "value"
-            ]
-          },
-          "pieType": "pie",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "count by (chain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
-            "legendFormat": "{{label_name}}",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM from chain",
-        "type": "piechart"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "custom": {
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "axisSoftMin": 0,
-              "fillOpacity": 80,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "lineWidth": 1,
-              "scaleDistribution": {
-                "type": "linear"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "DOT"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 11,
-          "w": 6,
-          "x": 0,
-          "y": 18
-        },
-        "id": 53,
-        "options": {
-          "barRadius": 0.1,
-          "barWidth": 0.97,
-          "groupWidth": 0.7,
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom"
-          },
-          "orientation": "vertical",
-          "showValue": "auto",
-          "stacking": "none",
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          },
-          "xTickLabelRotation": 0,
-          "xTickLabelSpacing": 0
-        },
-        "pluginVersion": "8.5.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "sum by (chain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
-            "format": "table",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM Transfers from chain",
-        "transformations": [
-          {
-            "id": "groupBy",
-            "options": {
-              "fields": {
-                "Value": {
-                  "aggregations": [
-                    "sum"
-                  ],
-                  "operation": "aggregate"
-                },
-                "chain": {
-                  "aggregations": [
-                    "sum"
-                  ],
-                  "operation": "groupby"
-                },
-                "tochain": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                }
-              }
-            }
-          }
-        ],
-        "type": "barchart"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "continuous-RdYlGr"
-            },
-            "custom": {
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "axisSoftMin": 0,
-              "fillOpacity": 80,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "lineWidth": 1,
-              "scaleDistribution": {
-                "type": "linear"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "DOT"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 11,
-          "w": 18,
-          "x": 6,
-          "y": 18
-        },
-        "id": 41,
-        "options": {
-          "barRadius": 0.1,
-          "barWidth": 0.97,
-          "groupWidth": 0.7,
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom"
-          },
-          "orientation": "vertical",
-          "showValue": "always",
-          "stacking": "none",
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          },
-          "xTickLabelRotation": 0,
-          "xTickLabelSpacing": 0
-        },
-        "pluginVersion": "8.5.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "sum by (tochain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
-            "format": "table",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM Transfers to chain",
-        "transformations": [
-          {
-            "id": "groupBy",
-            "options": {
-              "fields": {
-                "Value": {
-                  "aggregations": [
-                    "sum"
-                  ],
-                  "operation": "aggregate"
-                },
-                "chain": {
-                  "aggregations": [
-                    "sum"
-                  ],
-                  "operation": "groupby"
-                },
-                "tochain": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                }
-              }
-            }
-          }
-        ],
-        "transparent": true,
-        "type": "barchart"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "custom": {
-              "align": "auto",
-              "displayMode": "auto",
-              "filterable": true,
-              "inspect": true
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 13,
-          "w": 12,
-          "x": 0,
-          "y": 29
-        },
-        "id": 50,
-        "options": {
-          "footer": {
-            "enablePagination": true,
-            "fields": "",
-            "reducer": [
-              "sum"
-            ],
-            "show": true
-          },
-          "showHeader": true
-        },
-        "pluginVersion": "8.5.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"}",
-            "format": "table",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM Transfers All",
-        "transformations": [
-          {
-            "id": "groupBy",
-            "options": {
-              "fields": {
-                "Value": {
-                  "aggregations": [
-                    "sum"
-                  ],
-                  "operation": "groupby"
-                },
-                "chain": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                },
-                "tochain": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                }
-              }
-            }
-          }
-        ],
-        "type": "table"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "28CvR497k"
-        },
-        "description": "",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "custom": {
-              "align": "auto",
-              "displayMode": "auto",
-              "filterable": true,
-              "inspect": false
-            },
-            "mappings": [],
-            "noValue": "0",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "DOT"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 13,
-          "w": 12,
-          "x": 12,
-          "y": 29
-        },
-        "id": 52,
-        "options": {
-          "footer": {
-            "enablePagination": true,
-            "fields": "",
-            "reducer": [
-              "sum"
-            ],
-            "show": true
-          },
-          "showHeader": true
-        },
-        "pluginVersion": "8.5.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "28CvR497k"
-            },
-            "editorMode": "code",
-            "expr": "runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"}",
-            "format": "table",
-            "legendFormat": "{{chain}}",
-            "range": true,
-            "refId": "A"
-          }
-        ],
-        "title": "XCM transfers from chain to chain",
-        "transformations": [
-          {
-            "id": "groupBy",
-            "options": {
-              "fields": {
-                "Value": {
-                  "aggregations": [
-                    "sum"
-                  ],
-                  "operation": "aggregate"
-                },
-                "chain": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                },
-                "tochain": {
-                  "aggregations": [],
-                  "operation": "groupby"
-                }
-              }
-            }
-          }
-        ],
-        "type": "table"
-      }
-    ],
-    "refresh": "1m",
-    "schemaVersion": 36,
-    "style": "dark",
-    "tags": [
-      "dashb"
-    ],
-    "templating": {
-      "list": [
-        {
-          "current": {
-            "selected": false,
-            "text": [
-              "All"
-            ],
-            "value": [
-              "$__all"
-            ]
-          },
-          "datasource": {
-            "type": "prometheus",
-            "uid": "28CvR497k"
-          },
-          "definition": "runtime_xcm_transfers",
-          "hide": 0,
-          "includeAll": true,
-          "label": "from chain",
-          "multi": true,
-          "name": "fromchain",
-          "options": [],
-          "query": {
-            "query": "runtime_xcm_transfers",
-            "refId": "StandardVariableQuery"
-          },
-          "refresh": 1,
-          "regex": "/chain=\"(?<text>[^\"]+)|chain=\"(?<value>[^\"]+)/g",
-          "skipUrlSync": false,
-          "sort": 1,
-          "type": "query"
-        },
-        {
-          "current": {
-            "selected": true,
-            "text": [
-              "All"
-            ],
-            "value": [
-              "$__all"
-            ]
-          },
-          "datasource": {
-            "type": "prometheus",
-            "uid": "28CvR497k"
-          },
-          "definition": "runtime_xcm_transfers",
-          "hide": 0,
-          "includeAll": true,
-          "label": "to chain",
-          "multi": true,
-          "name": "tochain",
-          "options": [],
-          "query": {
-            "query": "runtime_xcm_transfers",
-            "refId": "StandardVariableQuery"
-          },
-          "refresh": 1,
-          "regex": "/tochain=\"(?<text>[^\"]+)|tochain=\"(?<value>[^\"]+)/g",
-          "skipUrlSync": false,
-          "sort": 1,
-          "type": "query"
-        }
-      ]
-    },
-    "time": {
-      "from": "now-2d",
-      "to": "now"
-    },
-    "timepicker": {},
-    "timezone": "",
-    "title": "XCM Transfers",
-    "uid": "7M16mN67kl",
-    "version": 29,
-    "weekStart": ""
-  }
+	"annotations": {
+		"list": [
+			{
+				"builtIn": 1,
+				"datasource": {
+					"type": "grafana",
+					"uid": "-- Grafana --"
+				},
+				"enable": true,
+				"hide": true,
+				"iconColor": "rgba(0, 211, 255, 1)",
+				"name": "Annotations & Alerts",
+				"target": {
+					"limit": 100,
+					"matchAny": false,
+					"tags": [],
+					"type": "dashboard"
+				},
+				"type": "dashboard"
+			}
+		]
+	},
+	"editable": true,
+	"fiscalYearStartMonth": 0,
+	"graphTooltip": 0,
+	"id": 8,
+	"iteration": 1657295378139,
+	"links": [
+		{
+			"asDropdown": true,
+			"icon": "external link",
+			"includeVars": false,
+			"keepTime": false,
+			"tags": ["dashb"],
+			"targetBlank": false,
+			"title": "Dashboards",
+			"tooltip": "",
+			"type": "dashboards",
+			"url": ""
+		}
+	],
+	"liveNow": false,
+	"panels": [
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"description": "",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisGridShow": true,
+						"axisLabel": "",
+						"axisPlacement": "hidden",
+						"axisSoftMin": 0,
+						"fillOpacity": 80,
+						"gradientMode": "none",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineWidth": 1,
+						"scaleDistribution": {
+							"type": "linear"
+						}
+					},
+					"mappings": [],
+					"noValue": "0",
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 9,
+				"w": 17,
+				"x": 0,
+				"y": 0
+			},
+			"id": 45,
+			"options": {
+				"barRadius": 0,
+				"barWidth": 0.97,
+				"groupWidth": 0.7,
+				"legend": {
+					"calcs": ["last"],
+					"displayMode": "list",
+					"placement": "right"
+				},
+				"orientation": "auto",
+				"showValue": "auto",
+				"stacking": "normal",
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				},
+				"xTickLabelRotation": 0,
+				"xTickLabelSpacing": 0
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"exemplar": true,
+					"expr": "sum by (tochain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
+					"instant": false,
+					"legendFormat": "{{label_name}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM transfers to chain",
+			"type": "barchart"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"description": "pallets usage",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						}
+					},
+					"mappings": []
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 9,
+				"w": 7,
+				"x": 17,
+				"y": 0
+			},
+			"id": 47,
+			"options": {
+				"displayLabels": [],
+				"legend": {
+					"displayMode": "list",
+					"placement": "right",
+					"values": ["value"]
+				},
+				"pieType": "pie",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "sum by (tochain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
+					"legendFormat": "{{label_name}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM to chain",
+			"type": "piechart"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"description": "",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisLabel": "",
+						"axisPlacement": "hidden",
+						"axisSoftMin": 0,
+						"fillOpacity": 80,
+						"gradientMode": "none",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineWidth": 1,
+						"scaleDistribution": {
+							"type": "linear"
+						}
+					},
+					"mappings": [],
+					"noValue": "0",
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 9,
+				"w": 17,
+				"x": 0,
+				"y": 9
+			},
+			"id": 48,
+			"options": {
+				"barRadius": 0,
+				"barWidth": 0.97,
+				"groupWidth": 0.7,
+				"legend": {
+					"calcs": ["lastNotNull"],
+					"displayMode": "list",
+					"placement": "right"
+				},
+				"orientation": "auto",
+				"showValue": "auto",
+				"stacking": "normal",
+				"text": {},
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				},
+				"xTickLabelRotation": 0,
+				"xTickLabelSpacing": 0
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "sum by (chain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
+					"legendFormat": "{{label_name}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "xcm transfers from chain",
+			"type": "barchart"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"description": "pallets usage",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						}
+					},
+					"mappings": []
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 9,
+				"w": 7,
+				"x": 17,
+				"y": 9
+			},
+			"id": 49,
+			"options": {
+				"displayLabels": [],
+				"legend": {
+					"displayMode": "list",
+					"placement": "right",
+					"values": ["value"]
+				},
+				"pieType": "pie",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "count by (chain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
+					"legendFormat": "{{label_name}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM from chain",
+			"type": "piechart"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"custom": {
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"axisSoftMin": 0,
+						"fillOpacity": 80,
+						"gradientMode": "none",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineWidth": 1,
+						"scaleDistribution": {
+							"type": "linear"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					},
+					"unit": "DOT"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 11,
+				"w": 6,
+				"x": 0,
+				"y": 18
+			},
+			"id": 53,
+			"options": {
+				"barRadius": 0.1,
+				"barWidth": 0.97,
+				"groupWidth": 0.7,
+				"legend": {
+					"calcs": [],
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"orientation": "vertical",
+				"showValue": "auto",
+				"stacking": "none",
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				},
+				"xTickLabelRotation": 0,
+				"xTickLabelSpacing": 0
+			},
+			"pluginVersion": "8.5.3",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "sum by (chain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
+					"format": "table",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM Transfers from chain",
+			"transformations": [
+				{
+					"id": "groupBy",
+					"options": {
+						"fields": {
+							"Value": {
+								"aggregations": ["sum"],
+								"operation": "aggregate"
+							},
+							"chain": {
+								"aggregations": ["sum"],
+								"operation": "groupby"
+							},
+							"tochain": {
+								"aggregations": [],
+								"operation": "groupby"
+							}
+						}
+					}
+				}
+			],
+			"type": "barchart"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "continuous-RdYlGr"
+					},
+					"custom": {
+						"axisLabel": "",
+						"axisPlacement": "auto",
+						"axisSoftMin": 0,
+						"fillOpacity": 80,
+						"gradientMode": "none",
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						},
+						"lineWidth": 1,
+						"scaleDistribution": {
+							"type": "linear"
+						}
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					},
+					"unit": "DOT"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 11,
+				"w": 18,
+				"x": 6,
+				"y": 18
+			},
+			"id": 41,
+			"options": {
+				"barRadius": 0.1,
+				"barWidth": 0.97,
+				"groupWidth": 0.7,
+				"legend": {
+					"calcs": [],
+					"displayMode": "list",
+					"placement": "bottom"
+				},
+				"orientation": "vertical",
+				"showValue": "always",
+				"stacking": "none",
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				},
+				"xTickLabelRotation": 0,
+				"xTickLabelSpacing": 0
+			},
+			"pluginVersion": "8.5.3",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "sum by (tochain) (runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"})",
+					"format": "table",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM Transfers to chain",
+			"transformations": [
+				{
+					"id": "groupBy",
+					"options": {
+						"fields": {
+							"Value": {
+								"aggregations": ["sum"],
+								"operation": "aggregate"
+							},
+							"chain": {
+								"aggregations": ["sum"],
+								"operation": "groupby"
+							},
+							"tochain": {
+								"aggregations": [],
+								"operation": "groupby"
+							}
+						}
+					}
+				}
+			],
+			"transparent": true,
+			"type": "barchart"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"custom": {
+						"align": "auto",
+						"displayMode": "auto",
+						"filterable": true,
+						"inspect": true
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 13,
+				"w": 12,
+				"x": 0,
+				"y": 29
+			},
+			"id": 50,
+			"options": {
+				"footer": {
+					"enablePagination": true,
+					"fields": "",
+					"reducer": ["sum"],
+					"show": true
+				},
+				"showHeader": true
+			},
+			"pluginVersion": "8.5.3",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"}",
+					"format": "table",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM Transfers All",
+			"transformations": [
+				{
+					"id": "groupBy",
+					"options": {
+						"fields": {
+							"Value": {
+								"aggregations": ["sum"],
+								"operation": "groupby"
+							},
+							"chain": {
+								"aggregations": [],
+								"operation": "groupby"
+							},
+							"tochain": {
+								"aggregations": [],
+								"operation": "groupby"
+							}
+						}
+					}
+				}
+			],
+			"type": "table"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "28CvR497k"
+			},
+			"description": "",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"custom": {
+						"align": "auto",
+						"displayMode": "auto",
+						"filterable": true,
+						"inspect": false
+					},
+					"mappings": [],
+					"noValue": "0",
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					},
+					"unit": "DOT"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 13,
+				"w": 12,
+				"x": 12,
+				"y": 29
+			},
+			"id": 52,
+			"options": {
+				"footer": {
+					"enablePagination": true,
+					"fields": "",
+					"reducer": ["sum"],
+					"show": true
+				},
+				"showHeader": true
+			},
+			"pluginVersion": "8.5.3",
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "28CvR497k"
+					},
+					"editorMode": "code",
+					"expr": "runtime_xcm_transfers{ chain=~\"(?i:($fromchain))\", tochain=~\"(?i:($tochain))\"}",
+					"format": "table",
+					"legendFormat": "{{chain}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "XCM transfers from chain to chain",
+			"transformations": [
+				{
+					"id": "groupBy",
+					"options": {
+						"fields": {
+							"Value": {
+								"aggregations": ["sum"],
+								"operation": "aggregate"
+							},
+							"chain": {
+								"aggregations": [],
+								"operation": "groupby"
+							},
+							"tochain": {
+								"aggregations": [],
+								"operation": "groupby"
+							}
+						}
+					}
+				}
+			],
+			"type": "table"
+		}
+	],
+	"refresh": "1m",
+	"schemaVersion": 36,
+	"style": "dark",
+	"tags": ["dashb"],
+	"templating": {
+		"list": [
+			{
+				"current": {
+					"selected": false,
+					"text": ["All"],
+					"value": ["$__all"]
+				},
+				"datasource": {
+					"type": "prometheus",
+					"uid": "28CvR497k"
+				},
+				"definition": "runtime_xcm_transfers",
+				"hide": 0,
+				"includeAll": true,
+				"label": "from chain",
+				"multi": true,
+				"name": "fromchain",
+				"options": [],
+				"query": {
+					"query": "runtime_xcm_transfers",
+					"refId": "StandardVariableQuery"
+				},
+				"refresh": 1,
+				"regex": "/chain=\"(?<text>[^\"]+)|chain=\"(?<value>[^\"]+)/g",
+				"skipUrlSync": false,
+				"sort": 1,
+				"type": "query"
+			},
+			{
+				"current": {
+					"selected": true,
+					"text": ["All"],
+					"value": ["$__all"]
+				},
+				"datasource": {
+					"type": "prometheus",
+					"uid": "28CvR497k"
+				},
+				"definition": "runtime_xcm_transfers",
+				"hide": 0,
+				"includeAll": true,
+				"label": "to chain",
+				"multi": true,
+				"name": "tochain",
+				"options": [],
+				"query": {
+					"query": "runtime_xcm_transfers",
+					"refId": "StandardVariableQuery"
+				},
+				"refresh": 1,
+				"regex": "/tochain=\"(?<text>[^\"]+)|tochain=\"(?<value>[^\"]+)/g",
+				"skipUrlSync": false,
+				"sort": 1,
+				"type": "query"
+			}
+		]
+	},
+	"time": {
+		"from": "now-2d",
+		"to": "now"
+	},
+	"timepicker": {},
+	"timezone": "",
+	"title": "XCM Transfers",
+	"uid": "7M16mN67kl",
+	"version": 29,
+	"weekStart": ""
+}
