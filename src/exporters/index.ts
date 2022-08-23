@@ -8,4 +8,3 @@ export * from '../exporters/palletsMethodsCalls';
 export * from '../exporters/electionProviderMultiPhase';
 export * from '../exporters/timestamp';
 export * from '../exporters/nominationPools';
-
