@@ -1,1262 +1,1176 @@
 {
-    "annotations": {
-      "list": [
-        {
-          "builtIn": 1,
-          "datasource": {
-            "type": "grafana",
-            "uid": "-- Grafana --"
-          },
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "name": "Annotations & Alerts",
-          "target": {
-            "limit": 100,
-            "matchAny": false,
-            "tags": [],
-            "type": "dashboard"
-          },
-          "type": "dashboard"
-        },
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "v3O4_kg4k"
-          },
-          "enable": true,
-          "hide": false,
-          "iconColor": "green",
-          "name": "Show Events",
-          "rawQuery": "\n\nSELECT\n  extract(epoch from annotations_grafana_events.time) AS time,\n  description as text,\n  tags as tags\nFROM\n  annotations_grafana_events\nWHERE\n  $__timeFilter(annotations_grafana_events.time)\n"
-        }
-      ]
-    },
-    "editable": true,
-    "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
-    "id": 11,
-    "iteration": 1658520044981,
-    "links": [],
-    "liveNow": false,
-    "panels": [
-      {
-        "collapsed": false,
-        "gridPos": {
-          "h": 1,
-          "w": 24,
-          "x": 0,
-          "y": 0
-        },
-        "id": 22,
-        "panels": [],
-        "title": "Pallets",
-        "type": "row"
-      },
-      {
-        "aliasColors": {},
-        "bars": true,
-        "dashLength": 10,
-        "dashes": false,
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fill": 1,
-        "fillGradient": 0,
-        "gridPos": {
-          "h": 14,
-          "w": 17,
-          "x": 0,
-          "y": 1
-        },
-        "hiddenSeries": false,
-        "id": 19,
-        "legend": {
-          "alignAsTable": true,
-          "avg": false,
-          "current": false,
-          "hideEmpty": false,
-          "hideZero": false,
-          "max": false,
-          "min": false,
-          "rightSide": true,
-          "show": true,
-          "sort": "total",
-          "sortDesc": true,
-          "total": true,
-          "values": true
-        },
-        "lines": false,
-        "linewidth": 1,
-        "nullPointMode": "null",
-        "options": {
-          "alertThreshold": true
-        },
-        "percentage": false,
-        "pluginVersion": "8.5.2",
-        "pointradius": 2,
-        "points": false,
-        "renderer": "flot",
-        "seriesOverrides": [],
-        "spaceLength": 10,
-        "stack": true,
-        "steppedLine": false,
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [
-              {
-                "params": [
-                  "$__interval",
-                  "none"
-                ],
-                "type": "time"
-              }
-            ],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) AS time,\n  sum(calls) AS \"calls\", section\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND method in($methods) AND section in($pallets)\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), section\n\nORDER BY 1",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "column"
-                },
-                {
-                  "params": [
-                    "avg"
-                  ],
-                  "type": "aggregate"
-                },
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "alias"
-                }
-              ]
-            ],
-            "table": "pallets_methods_calls",
-            "timeColumn": "\"time\"",
-            "timeColumnType": "timestamptz",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "thresholds": [],
-        "timeRegions": [],
-        "title": "Pallets",
-        "tooltip": {
-          "shared": true,
-          "sort": 0,
-          "value_type": "individual"
-        },
-        "type": "graph",
-        "xaxis": {
-          "mode": "time",
-          "show": true,
-          "values": []
-        },
-        "yaxes": [
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          },
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          }
-        ],
-        "yaxis": {
-          "align": false
-        }
-      },
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 7,
-          "x": 17,
-          "y": 1
-        },
-        "id": 23,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "textMode": "auto"
-        },
-        "pluginVersion": "8.5.2",
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  count(calls) as calls\n  \nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time); \n\n",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "value"
-                  ],
-                  "type": "column"
-                }
-              ]
-            ],
-            "timeColumn": "time",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "title": "All",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              }
-            },
-            "mappings": []
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 11,
-          "w": 7,
-          "x": 17,
-          "y": 4
-        },
-        "id": 6,
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "right",
-            "values": [
-              "percent"
-            ]
-          },
-          "pieType": "pie",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "desc"
-          }
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls,\n  section\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) , section\nORDER BY time\n",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "value"
-                  ],
-                  "type": "column"
-                }
-              ]
-            ],
-            "timeColumn": "time",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "title": "Pallets calls",
-        "type": "piechart"
-      },
-      {
-        "collapsed": true,
-        "gridPos": {
-          "h": 1,
-          "w": 24,
-          "x": 0,
-          "y": 15
-        },
-        "id": 13,
-        "panels": [],
-        "title": "Methods",
-        "type": "row"
-      },
-      {
-        "aliasColors": {},
-        "bars": true,
-        "dashLength": 10,
-        "dashes": false,
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fill": 1,
-        "fillGradient": 0,
-        "gridPos": {
-          "h": 13,
-          "w": 17,
-          "x": 0,
-          "y": 16
-        },
-        "hiddenSeries": false,
-        "id": 18,
-        "legend": {
-          "alignAsTable": true,
-          "avg": false,
-          "current": false,
-          "max": false,
-          "min": false,
-          "rightSide": true,
-          "show": true,
-          "sort": "total",
-          "sortDesc": true,
-          "total": true,
-          "values": true
-        },
-        "lines": false,
-        "linewidth": 1,
-        "nullPointMode": "null",
-        "options": {
-          "alertThreshold": true
-        },
-        "percentage": false,
-        "pluginVersion": "8.5.2",
-        "pointradius": 2,
-        "points": false,
-        "renderer": "flot",
-        "seriesOverrides": [],
-        "spaceLength": 10,
-        "stack": true,
-        "steppedLine": false,
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [
-              {
-                "params": [
-                  "$__interval",
-                  "none"
-                ],
-                "type": "time"
-              }
-            ],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) AS time,\n  sum(calls) AS \"calls\", method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND method in($methods) AND section in($pallets)\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), method\n\nORDER BY 1",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "column"
-                },
-                {
-                  "params": [
-                    "avg"
-                  ],
-                  "type": "aggregate"
-                },
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "alias"
-                }
-              ]
-            ],
-            "table": "pallets_methods_calls",
-            "timeColumn": "\"time\"",
-            "timeColumnType": "timestamptz",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "thresholds": [],
-        "timeRegions": [],
-        "title": "Methods",
-        "tooltip": {
-          "shared": true,
-          "sort": 0,
-          "value_type": "individual"
-        },
-        "type": "graph",
-        "xaxis": {
-          "mode": "time",
-          "show": true,
-          "values": []
-        },
-        "yaxes": [
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          },
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          }
-        ],
-        "yaxis": {
-          "align": false
-        }
-      },
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 7,
-          "x": 17,
-          "y": 16
-        },
-        "id": 24,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "textMode": "auto"
-        },
-        "pluginVersion": "8.5.2",
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls\n  \nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time); \n\n",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "value"
-                  ],
-                  "type": "column"
-                }
-              ]
-            ],
-            "timeColumn": "time",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "title": "All",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              }
-            },
-            "mappings": []
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 10,
-          "w": 7,
-          "x": 17,
-          "y": 19
-        },
-        "id": 7,
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "right",
-            "values": [
-              "percent"
-            ]
-          },
-          "pieType": "pie",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls,\n  method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) , method\nORDER BY time\n",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "value"
-                  ],
-                  "type": "column"
-                }
-              ]
-            ],
-            "timeColumn": "time",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "title": "Methods calls",
-        "type": "piechart"
-      },
-      {
-        "collapsed": false,
-        "gridPos": {
-          "h": 1,
-          "w": 24,
-          "x": 0,
-          "y": 29
-        },
-        "id": 15,
-        "panels": [],
-        "title": "Specifics",
-        "type": "row"
-      },
-      {
-        "aliasColors": {},
-        "bars": true,
-        "dashLength": 10,
-        "dashes": false,
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fill": 1,
-        "fillGradient": 0,
-        "gridPos": {
-          "h": 13,
-          "w": 17,
-          "x": 0,
-          "y": 30
-        },
-        "hiddenSeries": false,
-        "id": 17,
-        "legend": {
-          "alignAsTable": true,
-          "avg": false,
-          "current": false,
-          "max": false,
-          "min": false,
-          "rightSide": true,
-          "show": true,
-          "sort": "total",
-          "sortDesc": true,
-          "total": true,
-          "values": true
-        },
-        "lines": false,
-        "linewidth": 1,
-        "nullPointMode": "null",
-        "options": {
-          "alertThreshold": true
-        },
-        "percentage": false,
-        "pluginVersion": "8.5.2",
-        "pointradius": 2,
-        "points": false,
-        "renderer": "flot",
-        "seriesOverrides": [],
-        "spaceLength": 10,
-        "stack": true,
-        "steppedLine": false,
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [
-              {
-                "params": [
-                  "$__interval",
-                  "none"
-                ],
-                "type": "time"
-              }
-            ],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) AS time,\n  sum(calls) AS \"calls\", method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") and section like 'staking'\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), method\n\nORDER BY 1",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "column"
-                },
-                {
-                  "params": [
-                    "avg"
-                  ],
-                  "type": "aggregate"
-                },
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "alias"
-                }
-              ]
-            ],
-            "table": "pallets_methods_calls",
-            "timeColumn": "\"time\"",
-            "timeColumnType": "timestamptz",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "thresholds": [],
-        "timeRegions": [],
-        "title": "Staking Pallet Calls",
-        "tooltip": {
-          "shared": true,
-          "sort": 0,
-          "value_type": "individual"
-        },
-        "type": "graph",
-        "xaxis": {
-          "mode": "time",
-          "show": true,
-          "values": []
-        },
-        "yaxes": [
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          },
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          }
-        ],
-        "yaxis": {
-          "align": false
-        }
-      },
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 7,
-          "x": 17,
-          "y": 30
-        },
-        "id": 25,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "textMode": "auto"
-        },
-        "pluginVersion": "8.5.2",
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  count(calls) as calls\n  \nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND method in($methods) AND section like 'staking'\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time); \n\n",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "value"
-                  ],
-                  "type": "column"
-                }
-              ]
-            ],
-            "timeColumn": "time",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "title": "All Staking",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              }
-            },
-            "mappings": []
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 10,
-          "w": 7,
-          "x": 17,
-          "y": 33
-        },
-        "id": 26,
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "right",
-            "values": [
-              "percent"
-            ]
-          },
-          "pieType": "pie",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        },
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls,\n  method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods) AND section LIKE 'staking'\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) , method\nORDER BY time\n",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "value"
-                  ],
-                  "type": "column"
-                }
-              ]
-            ],
-            "timeColumn": "time",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "title": "Staking calls",
-        "type": "piechart"
-      },
-      {
-        "aliasColors": {},
-        "bars": true,
-        "dashLength": 10,
-        "dashes": false,
-        "datasource": {
-          "type": "postgres",
-          "uid": "v3O4_kg4k"
-        },
-        "fill": 1,
-        "fillGradient": 0,
-        "gridPos": {
-          "h": 13,
-          "w": 24,
-          "x": 0,
-          "y": 43
-        },
-        "hiddenSeries": false,
-        "id": 20,
-        "legend": {
-          "alignAsTable": true,
-          "avg": false,
-          "current": false,
-          "max": false,
-          "min": false,
-          "rightSide": true,
-          "show": true,
-          "sort": "total",
-          "sortDesc": true,
-          "total": true,
-          "values": true
-        },
-        "lines": false,
-        "linewidth": 1,
-        "nullPointMode": "null",
-        "options": {
-          "alertThreshold": true
-        },
-        "percentage": false,
-        "pluginVersion": "8.5.2",
-        "pointradius": 2,
-        "points": false,
-        "renderer": "flot",
-        "seriesOverrides": [],
-        "spaceLength": 10,
-        "stack": true,
-        "steppedLine": false,
-        "targets": [
-          {
-            "datasource": {
-              "type": "postgres",
-              "uid": "v3O4_kg4k"
-            },
-            "format": "time_series",
-            "group": [
-              {
-                "params": [
-                  "$__interval",
-                  "none"
-                ],
-                "type": "time"
-              }
-            ],
-            "metricColumn": "none",
-            "rawQuery": true,
-            "rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) AS time,\n  sum(calls) AS \"calls\", method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") and section like 'xcmPallet'\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), method\n\nORDER BY 1",
-            "refId": "A",
-            "select": [
-              [
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "column"
-                },
-                {
-                  "params": [
-                    "avg"
-                  ],
-                  "type": "aggregate"
-                },
-                {
-                  "params": [
-                    "calls"
-                  ],
-                  "type": "alias"
-                }
-              ]
-            ],
-            "table": "pallets_methods_calls",
-            "timeColumn": "\"time\"",
-            "timeColumnType": "timestamptz",
-            "where": [
-              {
-                "name": "$__timeFilter",
-                "params": [],
-                "type": "macro"
-              }
-            ]
-          }
-        ],
-        "thresholds": [],
-        "timeRegions": [],
-        "title": "xcmPallet Calls",
-        "tooltip": {
-          "shared": true,
-          "sort": 0,
-          "value_type": "individual"
-        },
-        "type": "graph",
-        "xaxis": {
-          "mode": "time",
-          "show": true,
-          "values": []
-        },
-        "yaxes": [
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          },
-          {
-            "format": "short",
-            "logBase": 1,
-            "show": true
-          }
-        ],
-        "yaxis": {
-          "align": false
-        }
-      }
-    ],
-    "refresh": false,
-    "schemaVersion": 36,
-    "style": "dark",
-    "tags": [],
-    "templating": {
-      "list": [
-        {
-          "current": {
-            "selected": true,
-            "text": [
-              "All"
-            ],
-            "value": [
-              "$__all"
-            ]
-          },
-          "datasource": {
-            "type": "postgres",
-            "uid": "v3O4_kg4k"
-          },
-          "definition": "SELECT DISTINCT section from pallets_methods_calls;",
-          "hide": 0,
-          "includeAll": true,
-          "label": "Pallets",
-          "multi": true,
-          "name": "pallets",
-          "options": [],
-          "query": "SELECT DISTINCT section from pallets_methods_calls;",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 0,
-          "type": "query"
-        },
-        {
-          "current": {
-            "selected": true,
-            "text": [
-              "All"
-            ],
-            "value": [
-              "$__all"
-            ]
-          },
-          "datasource": {
-            "type": "postgres",
-            "uid": "v3O4_kg4k"
-          },
-          "definition": "SELECT DISTINCT method from pallets_methods_calls;",
-          "hide": 0,
-          "includeAll": true,
-          "label": "methods",
-          "multi": true,
-          "name": "methods",
-          "options": [],
-          "query": "SELECT DISTINCT method from pallets_methods_calls;",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 0,
-          "type": "query"
-        },
-        {
-          "current": {
-            "selected": false,
-            "text": [
-              "Polkadot"
-            ],
-            "value": [
-              "Polkadot"
-            ]
-          },
-          "hide": 0,
-          "includeAll": true,
-          "label": "",
-          "multi": true,
-          "name": "parachains",
-          "options": [
-            {
-              "selected": false,
-              "text": "All",
-              "value": "$__all"
-            },
-            {
-              "selected": true,
-              "text": "Polkadot",
-              "value": "Polkadot"
-            }
-          ],
-          "query": "Polkadot",
-          "queryValue": "",
-          "skipUrlSync": false,
-          "type": "custom"
-        },
-        {
-          "current": {
-            "selected": true,
-            "text": "1h",
-            "value": "1h"
-          },
-          "hide": 0,
-          "includeAll": false,
-          "label": "Time Resolution",
-          "multi": false,
-          "name": "bucket_interval",
-          "options": [
-            {
-              "selected": true,
-              "text": "1h",
-              "value": "1h"
-            },
-            {
-              "selected": false,
-              "text": "1d",
-              "value": "1d"
-            },
-            {
-              "selected": false,
-              "text": "1w",
-              "value": "1w"
-            }
-          ],
-          "query": "1h,1d,1w",
-          "queryValue": "",
-          "skipUrlSync": false,
-          "type": "custom"
-        }
-      ]
-    },
-    "time": {
-      "from": "now-2d",
-      "to": "now"
-    },
-    "timepicker": {
-      "refresh_intervals": [
-        "1m",
-        "5m",
-        "15m",
-        "30m",
-        "1h",
-        "2h",
-        "1d"
-      ]
-    },
-    "timezone": "",
-    "title": "All time data",
-    "uid": "9qkdRmR4z",
-    "version": 38,
-    "weekStart": ""
-  }
+	"annotations": {
+		"list": [
+			{
+				"builtIn": 1,
+				"datasource": {
+					"type": "grafana",
+					"uid": "-- Grafana --"
+				},
+				"enable": true,
+				"hide": true,
+				"iconColor": "rgba(0, 211, 255, 1)",
+				"name": "Annotations & Alerts",
+				"target": {
+					"limit": 100,
+					"matchAny": false,
+					"tags": [],
+					"type": "dashboard"
+				},
+				"type": "dashboard"
+			},
+			{
+				"datasource": {
+					"type": "postgres",
+					"uid": "v3O4_kg4k"
+				},
+				"enable": true,
+				"hide": false,
+				"iconColor": "green",
+				"name": "Show Events",
+				"rawQuery": "\n\nSELECT\n  extract(epoch from annotations_grafana_events.time) AS time,\n  description as text,\n  tags as tags\nFROM\n  annotations_grafana_events\nWHERE\n  $__timeFilter(annotations_grafana_events.time)\n"
+			}
+		]
+	},
+	"editable": true,
+	"fiscalYearStartMonth": 0,
+	"graphTooltip": 0,
+	"id": 11,
+	"iteration": 1658520044981,
+	"links": [],
+	"liveNow": false,
+	"panels": [
+		{
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 0
+			},
+			"id": 22,
+			"panels": [],
+			"title": "Pallets",
+			"type": "row"
+		},
+		{
+			"aliasColors": {},
+			"bars": true,
+			"dashLength": 10,
+			"dashes": false,
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fill": 1,
+			"fillGradient": 0,
+			"gridPos": {
+				"h": 14,
+				"w": 17,
+				"x": 0,
+				"y": 1
+			},
+			"hiddenSeries": false,
+			"id": 19,
+			"legend": {
+				"alignAsTable": true,
+				"avg": false,
+				"current": false,
+				"hideEmpty": false,
+				"hideZero": false,
+				"max": false,
+				"min": false,
+				"rightSide": true,
+				"show": true,
+				"sort": "total",
+				"sortDesc": true,
+				"total": true,
+				"values": true
+			},
+			"lines": false,
+			"linewidth": 1,
+			"nullPointMode": "null",
+			"options": {
+				"alertThreshold": true
+			},
+			"percentage": false,
+			"pluginVersion": "8.5.2",
+			"pointradius": 2,
+			"points": false,
+			"renderer": "flot",
+			"seriesOverrides": [],
+			"spaceLength": 10,
+			"stack": true,
+			"steppedLine": false,
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [
+						{
+							"params": ["$__interval", "none"],
+							"type": "time"
+						}
+					],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) AS time,\n  sum(calls) AS \"calls\", section\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND method in($methods) AND section in($pallets)\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), section\n\nORDER BY 1",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["calls"],
+								"type": "column"
+							},
+							{
+								"params": ["avg"],
+								"type": "aggregate"
+							},
+							{
+								"params": ["calls"],
+								"type": "alias"
+							}
+						]
+					],
+					"table": "pallets_methods_calls",
+					"timeColumn": "\"time\"",
+					"timeColumnType": "timestamptz",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"thresholds": [],
+			"timeRegions": [],
+			"title": "Pallets",
+			"tooltip": {
+				"shared": true,
+				"sort": 0,
+				"value_type": "individual"
+			},
+			"type": "graph",
+			"xaxis": {
+				"mode": "time",
+				"show": true,
+				"values": []
+			},
+			"yaxes": [
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				},
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				}
+			],
+			"yaxis": {
+				"align": false
+			}
+		},
+		{
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 7,
+				"x": 17,
+				"y": 1
+			},
+			"id": 23,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "8.5.2",
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  count(calls) as calls\n  \nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time); \n\n",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["value"],
+								"type": "column"
+							}
+						]
+					],
+					"timeColumn": "time",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"title": "All",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						}
+					},
+					"mappings": []
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 11,
+				"w": 7,
+				"x": 17,
+				"y": 4
+			},
+			"id": 6,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "right",
+					"values": ["percent"]
+				},
+				"pieType": "pie",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"tooltip": {
+					"mode": "single",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls,\n  section\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) , section\nORDER BY time\n",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["value"],
+								"type": "column"
+							}
+						]
+					],
+					"timeColumn": "time",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"title": "Pallets calls",
+			"type": "piechart"
+		},
+		{
+			"collapsed": true,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 15
+			},
+			"id": 13,
+			"panels": [],
+			"title": "Methods",
+			"type": "row"
+		},
+		{
+			"aliasColors": {},
+			"bars": true,
+			"dashLength": 10,
+			"dashes": false,
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fill": 1,
+			"fillGradient": 0,
+			"gridPos": {
+				"h": 13,
+				"w": 17,
+				"x": 0,
+				"y": 16
+			},
+			"hiddenSeries": false,
+			"id": 18,
+			"legend": {
+				"alignAsTable": true,
+				"avg": false,
+				"current": false,
+				"max": false,
+				"min": false,
+				"rightSide": true,
+				"show": true,
+				"sort": "total",
+				"sortDesc": true,
+				"total": true,
+				"values": true
+			},
+			"lines": false,
+			"linewidth": 1,
+			"nullPointMode": "null",
+			"options": {
+				"alertThreshold": true
+			},
+			"percentage": false,
+			"pluginVersion": "8.5.2",
+			"pointradius": 2,
+			"points": false,
+			"renderer": "flot",
+			"seriesOverrides": [],
+			"spaceLength": 10,
+			"stack": true,
+			"steppedLine": false,
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [
+						{
+							"params": ["$__interval", "none"],
+							"type": "time"
+						}
+					],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) AS time,\n  sum(calls) AS \"calls\", method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND method in($methods) AND section in($pallets)\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), method\n\nORDER BY 1",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["calls"],
+								"type": "column"
+							},
+							{
+								"params": ["avg"],
+								"type": "aggregate"
+							},
+							{
+								"params": ["calls"],
+								"type": "alias"
+							}
+						]
+					],
+					"table": "pallets_methods_calls",
+					"timeColumn": "\"time\"",
+					"timeColumnType": "timestamptz",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"thresholds": [],
+			"timeRegions": [],
+			"title": "Methods",
+			"tooltip": {
+				"shared": true,
+				"sort": 0,
+				"value_type": "individual"
+			},
+			"type": "graph",
+			"xaxis": {
+				"mode": "time",
+				"show": true,
+				"values": []
+			},
+			"yaxes": [
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				},
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				}
+			],
+			"yaxis": {
+				"align": false
+			}
+		},
+		{
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 7,
+				"x": 17,
+				"y": 16
+			},
+			"id": 24,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "8.5.2",
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls\n  \nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time); \n\n",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["value"],
+								"type": "column"
+							}
+						]
+					],
+					"timeColumn": "time",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"title": "All",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						}
+					},
+					"mappings": []
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 10,
+				"w": 7,
+				"x": 17,
+				"y": 19
+			},
+			"id": 7,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "right",
+					"values": ["percent"]
+				},
+				"pieType": "pie",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls,\n  method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods)\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) , method\nORDER BY time\n",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["value"],
+								"type": "column"
+							}
+						]
+					],
+					"timeColumn": "time",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"title": "Methods calls",
+			"type": "piechart"
+		},
+		{
+			"collapsed": false,
+			"gridPos": {
+				"h": 1,
+				"w": 24,
+				"x": 0,
+				"y": 29
+			},
+			"id": 15,
+			"panels": [],
+			"title": "Specifics",
+			"type": "row"
+		},
+		{
+			"aliasColors": {},
+			"bars": true,
+			"dashLength": 10,
+			"dashes": false,
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fill": 1,
+			"fillGradient": 0,
+			"gridPos": {
+				"h": 13,
+				"w": 17,
+				"x": 0,
+				"y": 30
+			},
+			"hiddenSeries": false,
+			"id": 17,
+			"legend": {
+				"alignAsTable": true,
+				"avg": false,
+				"current": false,
+				"max": false,
+				"min": false,
+				"rightSide": true,
+				"show": true,
+				"sort": "total",
+				"sortDesc": true,
+				"total": true,
+				"values": true
+			},
+			"lines": false,
+			"linewidth": 1,
+			"nullPointMode": "null",
+			"options": {
+				"alertThreshold": true
+			},
+			"percentage": false,
+			"pluginVersion": "8.5.2",
+			"pointradius": 2,
+			"points": false,
+			"renderer": "flot",
+			"seriesOverrides": [],
+			"spaceLength": 10,
+			"stack": true,
+			"steppedLine": false,
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [
+						{
+							"params": ["$__interval", "none"],
+							"type": "time"
+						}
+					],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) AS time,\n  sum(calls) AS \"calls\", method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") and section like 'staking'\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), method\n\nORDER BY 1",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["calls"],
+								"type": "column"
+							},
+							{
+								"params": ["avg"],
+								"type": "aggregate"
+							},
+							{
+								"params": ["calls"],
+								"type": "alias"
+							}
+						]
+					],
+					"table": "pallets_methods_calls",
+					"timeColumn": "\"time\"",
+					"timeColumnType": "timestamptz",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"thresholds": [],
+			"timeRegions": [],
+			"title": "Staking Pallet Calls",
+			"tooltip": {
+				"shared": true,
+				"sort": 0,
+				"value_type": "individual"
+			},
+			"type": "graph",
+			"xaxis": {
+				"mode": "time",
+				"show": true,
+				"values": []
+			},
+			"yaxes": [
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				},
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				}
+			],
+			"yaxis": {
+				"align": false
+			}
+		},
+		{
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": null
+							},
+							{
+								"color": "red",
+								"value": 80
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 7,
+				"x": 17,
+				"y": 30
+			},
+			"id": 25,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"textMode": "auto"
+			},
+			"pluginVersion": "8.5.2",
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  count(calls) as calls\n  \nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND method in($methods) AND section like 'staking'\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time); \n\n",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["value"],
+								"type": "column"
+							}
+						]
+					],
+					"timeColumn": "time",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"title": "All Staking",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"hideFrom": {
+							"legend": false,
+							"tooltip": false,
+							"viz": false
+						}
+					},
+					"mappings": []
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 10,
+				"w": 7,
+				"x": 17,
+				"y": 33
+			},
+			"id": 26,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "right",
+					"values": ["percent"]
+				},
+				"pieType": "pie",
+				"reduceOptions": {
+					"calcs": ["sum"],
+					"fields": "",
+					"values": false
+				},
+				"tooltip": {
+					"mode": "single",
+					"sort": "none"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) as time ,\n  sum(calls) as calls,\n  method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") AND section in($pallets) AND method in($methods) AND section LIKE 'staking'\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time) , method\nORDER BY time\n",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["value"],
+								"type": "column"
+							}
+						]
+					],
+					"timeColumn": "time",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"title": "Staking calls",
+			"type": "piechart"
+		},
+		{
+			"aliasColors": {},
+			"bars": true,
+			"dashLength": 10,
+			"dashes": false,
+			"datasource": {
+				"type": "postgres",
+				"uid": "v3O4_kg4k"
+			},
+			"fill": 1,
+			"fillGradient": 0,
+			"gridPos": {
+				"h": 13,
+				"w": 24,
+				"x": 0,
+				"y": 43
+			},
+			"hiddenSeries": false,
+			"id": 20,
+			"legend": {
+				"alignAsTable": true,
+				"avg": false,
+				"current": false,
+				"max": false,
+				"min": false,
+				"rightSide": true,
+				"show": true,
+				"sort": "total",
+				"sortDesc": true,
+				"total": true,
+				"values": true
+			},
+			"lines": false,
+			"linewidth": 1,
+			"nullPointMode": "null",
+			"options": {
+				"alertThreshold": true
+			},
+			"percentage": false,
+			"pluginVersion": "8.5.2",
+			"pointradius": 2,
+			"points": false,
+			"renderer": "flot",
+			"seriesOverrides": [],
+			"spaceLength": 10,
+			"stack": true,
+			"steppedLine": false,
+			"targets": [
+				{
+					"datasource": {
+						"type": "postgres",
+						"uid": "v3O4_kg4k"
+					},
+					"format": "time_series",
+					"group": [
+						{
+							"params": ["$__interval", "none"],
+							"type": "time"
+						}
+					],
+					"metricColumn": "none",
+					"rawQuery": true,
+					"rawSql": "SELECT\n  time_bucket_gapfill('$bucket_interval', time) AS time,\n  sum(calls) AS \"calls\", method\nFROM pallets_methods_calls\nWHERE\n  $__timeFilter(\"time\") and section like 'xcmPallet'\n\nGROUP BY time_bucket_gapfill('$bucket_interval', pallets_methods_calls.time), method\n\nORDER BY 1",
+					"refId": "A",
+					"select": [
+						[
+							{
+								"params": ["calls"],
+								"type": "column"
+							},
+							{
+								"params": ["avg"],
+								"type": "aggregate"
+							},
+							{
+								"params": ["calls"],
+								"type": "alias"
+							}
+						]
+					],
+					"table": "pallets_methods_calls",
+					"timeColumn": "\"time\"",
+					"timeColumnType": "timestamptz",
+					"where": [
+						{
+							"name": "$__timeFilter",
+							"params": [],
+							"type": "macro"
+						}
+					]
+				}
+			],
+			"thresholds": [],
+			"timeRegions": [],
+			"title": "xcmPallet Calls",
+			"tooltip": {
+				"shared": true,
+				"sort": 0,
+				"value_type": "individual"
+			},
+			"type": "graph",
+			"xaxis": {
+				"mode": "time",
+				"show": true,
+				"values": []
+			},
+			"yaxes": [
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				},
+				{
+					"format": "short",
+					"logBase": 1,
+					"show": true
+				}
+			],
+			"yaxis": {
+				"align": false
+			}
+		}
+	],
+	"refresh": false,
+	"schemaVersion": 36,
+	"style": "dark",
+	"tags": [],
+	"templating": {
+		"list": [
+			{
+				"current": {
+					"selected": true,
+					"text": ["All"],
+					"value": ["$__all"]
+				},
+				"datasource": {
+					"type": "postgres",
+					"uid": "v3O4_kg4k"
+				},
+				"definition": "SELECT DISTINCT section from pallets_methods_calls;",
+				"hide": 0,
+				"includeAll": true,
+				"label": "Pallets",
+				"multi": true,
+				"name": "pallets",
+				"options": [],
+				"query": "SELECT DISTINCT section from pallets_methods_calls;",
+				"refresh": 1,
+				"regex": "",
+				"skipUrlSync": false,
+				"sort": 0,
+				"type": "query"
+			},
+			{
+				"current": {
+					"selected": true,
+					"text": ["All"],
+					"value": ["$__all"]
+				},
+				"datasource": {
+					"type": "postgres",
+					"uid": "v3O4_kg4k"
+				},
+				"definition": "SELECT DISTINCT method from pallets_methods_calls;",
+				"hide": 0,
+				"includeAll": true,
+				"label": "methods",
+				"multi": true,
+				"name": "methods",
+				"options": [],
+				"query": "SELECT DISTINCT method from pallets_methods_calls;",
+				"refresh": 1,
+				"regex": "",
+				"skipUrlSync": false,
+				"sort": 0,
+				"type": "query"
+			},
+			{
+				"current": {
+					"selected": false,
+					"text": ["Polkadot"],
+					"value": ["Polkadot"]
+				},
+				"hide": 0,
+				"includeAll": true,
+				"label": "",
+				"multi": true,
+				"name": "parachains",
+				"options": [
+					{
+						"selected": false,
+						"text": "All",
+						"value": "$__all"
+					},
+					{
+						"selected": true,
+						"text": "Polkadot",
+						"value": "Polkadot"
+					}
+				],
+				"query": "Polkadot",
+				"queryValue": "",
+				"skipUrlSync": false,
+				"type": "custom"
+			},
+			{
+				"current": {
+					"selected": true,
+					"text": "1h",
+					"value": "1h"
+				},
+				"hide": 0,
+				"includeAll": false,
+				"label": "Time Resolution",
+				"multi": false,
+				"name": "bucket_interval",
+				"options": [
+					{
+						"selected": true,
+						"text": "1h",
+						"value": "1h"
+					},
+					{
+						"selected": false,
+						"text": "1d",
+						"value": "1d"
+					},
+					{
+						"selected": false,
+						"text": "1w",
+						"value": "1w"
+					}
+				],
+				"query": "1h,1d,1w",
+				"queryValue": "",
+				"skipUrlSync": false,
+				"type": "custom"
+			}
+		]
+	},
+	"time": {
+		"from": "now-2d",
+		"to": "now"
+	},
+	"timepicker": {
+		"refresh_intervals": ["1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+	},
+	"timezone": "",
+	"title": "All time data",
+	"uid": "9qkdRmR4z",
+	"version": 38,
+	"weekStart": ""
+}

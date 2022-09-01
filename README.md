@@ -2,7 +2,6 @@
 
 ## Prometheus exporter for polkadot runtime metrics
 
-
 The Runtime Exporter collects in real time onchain current data, and historical data, in a form of data series, with the goal of visualising analytics, for any parachain of the Polkadot and Kusama ecosystems.
 
 The Runtime Exporter Dashboards are Grafana based, and any user can customise and add his own metrics and dashboards.
@@ -32,11 +31,13 @@ A minimum of one database is required, and it's up to you to install both Promet
 https://prometheus.io/docs/prometheus/latest/installation/
 
 Once Prometheus installed, go to the root of your runtime exporter folder and run this command :
+
 ```sh
 ../prometheus/prometheus-<your version>/prometheus --config.file="./prometheus.yml"
 ```
 
 #### Timescaledb
+
 https://docs.timescale.com/install/latest/self-hosted/installation-debian/
 
 Once Timescaledb installed, run the following script to create the metric tables and configuration tables.
@@ -53,7 +54,6 @@ Install Grafana
 
 https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
 
-
 #### .env file
 
 ```sh
@@ -61,6 +61,7 @@ PORT=8000
 TSDB_CONN='postgres://<postgres user>:<postgres password>@localhost:5432/tsdb'
 CONFIG_FULL_PATH='<the full path of config.json>'
 ```
+
 PORT is the prometheus connection port corresponding to your installation.
 
 TSDB_CONN is the timescaledb connection string .
@@ -84,27 +85,27 @@ For example:
 
 Will monitor Polkadot and Kusama.
 
-
 #### Install the Runtime Exporter
 
 At this stage, you should be able to run the Runtime Exporter in a simple mode, meaning without loading history, which will be explained later.
 
 Go to your Runtime Exporter root directory.
 
-If you run the Runtime Exporter for the first time: 
+If you run the Runtime Exporter for the first time:
 
 ```sh
-yarn 
+yarn
 ```
 
 And then run the Runtime Exporter:
+
 ```sh
 yarn run run
 ```
 
 You should see the first lines of log:
 
-```sh 
+```sh
 yarn run v1.22.17
 $ yarn run build && node build/index.js
 $ ./node_modules/.bin/rimraf ./build && ./node_modules/.bin/tsc
@@ -118,13 +119,11 @@ http://localhost:9090/graph
 or
 http://localhost:9090/metrics
 
-
 Congratulations, the Runtime Exporter is installed and running!
 
 Howver, this is just the beginning, we will explain below how to configure the Runtime Exporter in order to load history for your chosen metrics and parachains.
 
 #### Create a service for the Runtime Exporter
-
 
 In order to guaranty that the Runtime Exporter is always up and running, it is recommended to define it as a service that will launch automatically in case of failure or disconnection.
 
@@ -141,13 +140,17 @@ echo "restart exporter at $var" >> /tmp/runtime-exporter.log
 cd <your working directory>/polkadot-runtime-prom-exporter
 sudo yarn run run
 ```
+
 You can find running linux service under path:
+
 ```sh
 
 cd /lib/systemd/system/
 vi polkexporter.service
 ```
+
 Paste and change **< your script directory >**:
+
 ```sh
 [Unit]
 Description=Runtime Exporter Metrics for Polkadot & Kusama
@@ -165,12 +168,11 @@ WantedBy=multi-user.target
 
 ## Load History
 
-### 
+###
 
-In order to load historical data for specific metrics and parachains, you need to configure the section **history** of the file **config.json** located at *< runtime exporter dir >/src*
+In order to load historical data for specific metrics and parachains, you need to configure the section **history** of the file **config.json** located at _< runtime exporter dir >/src_
 
 Note that this file can be empty, and in this case, the Runtime Exporter will store the current ongoing data for every block, but not the history.
-
 
 For example:
 
@@ -205,20 +207,18 @@ For example:
 
 We can see here 2 sections, each of them containing 5 parameters.
 
-* **chain**: the same rpc connection string that you defined in the parachains.json for the corresponding parachain.
-* **startingBlock**: the block to start loading history. Note that this number must be higher than the following endingBlock, as history is loaded backward.
-* **endingBlock**: the block where history will stop loading.
-* **pallets**: the list of pallets that you want to load. Every exporter that uses this pallet will be loaded. If the string is empty, then all the pallets are requested to load, meaning also all the existing exporters.
-* **distanceBetweenBlocks**: the distance between blocks when querying historical data. You can define per pallet the distance bwtween blocks. If this section is not defined, the distance between blocks will use a default value of 1.
+- **chain**: the same rpc connection string that you defined in the parachains.json for the corresponding parachain.
+- **startingBlock**: the block to start loading history. Note that this number must be higher than the following endingBlock, as history is loaded backward.
+- **endingBlock**: the block where history will stop loading.
+- **pallets**: the list of pallets that you want to load. Every exporter that uses this pallet will be loaded. If the string is empty, then all the pallets are requested to load, meaning also all the existing exporters.
+- **distanceBetweenBlocks**: the distance between blocks when querying historical data. You can define per pallet the distance bwtween blocks. If this section is not defined, the distance between blocks will use a default value of 1.
 
 Please note that the last parameter of the config file, distanceBetweenBlocks , does not fit with all the exporters.
 For example, the palletsMethodsCalls exporter counts the total number of calls per pallet and per method and per block. So in that case, if you define a distanceBetweenBlocks parameter, you will get the count only for the selected blocks, which represent only a portion of what it should be.
 
 A good example of use could apply to the **balance**s exporter, as it is giving an instant snapshot of the total issuance amount. So whether it is collected for every block or for every 1000 blocks, the result will be the same. The effect of this parameter will be that the loading of historical record will be much faster than without.
 
-
-
-You can modify this file as many times as you want, and restart the Runtime Exporter. 
+You can modify this file as many times as you want, and restart the Runtime Exporter.
 If the same configuration is used when restarting the Runtime Exporter, and history was successfully loaded in a previous run, the Runtime Exporter will ignore the record in order avoid to load again and again the same data.
 
 ## Versionning
@@ -226,11 +226,9 @@ If the same configuration is used when restarting the Runtime Exporter, and hist
 This is an advanced section, you can skip it if you don't intend to write new exporters on your own.
 
 The Runtime Exporter is an Open Source, and is subject to future additions and modifications.
-Some exporters may require more metrics to be collected in the future, and when it happens, the versionning mechanism will allow to reload historical data only for Exporters where new  metrics were added. 
+Some exporters may require more metrics to be collected in the future, and when it happens, the versionning mechanism will allow to reload historical data only for Exporters where new metrics were added.
 
 If you are a developer and add a new metric in a specific Exporter, you need to increase the version of the exporter by one.
-
-
 
 For example, if you add a metric to the Balances Exporter (src/exporters/balances.ts), you have to change **this.exporterVersion** to 2 if it was 1.
 
@@ -238,22 +236,22 @@ For example, if you add a metric to the Balances Exporter (src/exporters/balance
 class BalancesExporter extends Balances implements Exporter {
     palletIdentifier: any;
     exporterVersion: number;
-	exporterIdenfier: string;
-    
+	exporterIdentifier: string;
+
     registry: PromClient.Registry;
 
     constructor(registry: PromClient.Registry) {
-        //worker needs .js 
+        //worker needs .js
         super(BALANCE_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "balances";
-        this.exporterIdenfier = "balances";
+        this.exporterIdentifier = "balances";
         this.exporterVersion = 2;
-        
+
     }
 ```
 
-### Checking that history has been loaded 
+### Checking that history has been loaded
 
 When restarting, the Runtime Exporter, will detect which records that were previously loaded using the parachains_load_history.json file will have to be loaded again due to version changes.
 
@@ -264,7 +262,7 @@ In order to verify that a record has been loaded from parachains_load_history.js
 ```sql
 select * from exporters_versions;
 
-            time            | startingblock | endingblock |  chain   |          exporter          | version | distancebb 
+            time            | startingblock | endingblock |  chain   |          exporter          | version | distancebb
 ----------------------------+---------------+-------------+----------+----------------------------+---------+------------
  2022-08-12 21:18:35.55+02  |      11512045 |    11511045 | Polkadot | timestamp                  |       1 |          1
  2022-08-12 21:19:46.131+02 |      11512045 |    11511045 | Polkadot | palletMethodsCalls         |       1 |          1
@@ -279,7 +277,7 @@ You can alternatively query the tables that correspond to the metrics loaded by 
 ## Visualising data in Grafana
 
 There are today around 40 different metrics, with 10 exporters.
-Every metric can be visualized in Grafana, either using the Prometheus database as a data source, either timescaledb, or both of them. 
+Every metric can be visualized in Grafana, either using the Prometheus database as a data source, either timescaledb, or both of them.
 
 There is a shared list of dashboard provided in this repository, that can be found at src/grafana-dashboards with many examples of database queries and charts.
 

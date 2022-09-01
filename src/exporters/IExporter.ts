@@ -1,6 +1,6 @@
 /// Something that wants to be an exporter of data.
-import { ApiPromise } from "@polkadot/api";
-import { Header } from "@polkadot/types/interfaces";
+import { ApiPromise } from '@polkadot/api';
+import { Header } from '@polkadot/types/interfaces';
 
 export interface Exporter {
 	/// The name of this pallet. If this property exists in `apu.query`, then we can assume this
@@ -10,17 +10,16 @@ export interface Exporter {
 	/// better unique identifier for each pallet on the FRAME side.
 	palletIdentifier: any;
 	exporterVersion: any;
-	exporterIdenfier: any;
+	exporterIdentifier: any;
 
 	/// Hook executed per every block.
 	///
 	/// The header and block are also provided.
-	perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void>,
+	perBlock(api: ApiPromise, header: Header, chainName: string): Promise<void>;
 	/// Hook executed per every hour.
-	perHour(api: ApiPromise, chainName: string): any,
+	perHour(api: ApiPromise, chainName: string): any;
 	/// Hook executed per every day
-	perDay(api: ApiPromise, chainName: string): any,
-//	doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string): any
- 	init( chainName: string, startingBlockTime: Date, endingBlockTime: Date): any,
+	perDay(api: ApiPromise, chainName: string): any;
+	//	doLoadHistory(threadsNumber: number, startingBlock: number, endingBlock: number, chain: string): any
+	init(chainName: string, startingBlockTime: Date, endingBlockTime: Date): any;
 }
-
