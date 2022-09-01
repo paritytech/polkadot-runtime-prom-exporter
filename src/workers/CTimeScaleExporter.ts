@@ -92,20 +92,7 @@ export class CTimeScaleExporter {
 					if (completedWorkers == threadsNumber) {
 						logger.debug(`all finished for worker ${this.workerPath} ${chainName}`);
 						if (checkRecord == false) {
-							console.log('', chainName, exporterName, exporterVersion, startingBlock, endingBlock);
-							this.writeExporterRecord(
-								this.exportersVersionsSql,
-								chainName,
-								exporterName,
-								exporterVersion,
-								startingBlock,
-								endingBlock,
-								distanceBB
-							);
-						} else {
-							logger.debug(
-								`record already exists for ${chain} ${exporterName} version ${exporterVersion} ${startingBlock} ${endingBlock} `
-							);
+							this.writeExporterRecord(this.exportersVersionsSql, chainName, exporterName, exporterVersion, startingBlock, endingBlock, distanceBB);
 						}
 					}
 					worker.terminate();
@@ -141,8 +128,7 @@ export class CTimeScaleExporter {
 			endingBlock
 		);
 
-		console.log('distancebb before storage', distanceBB);
-		//write to the exporters_versions table when finished
+		//write to the exporters_versions table when finished 
 		const result = this.exportersVersionsSql.create(
 			{
 				time: timestamp,

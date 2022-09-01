@@ -16,15 +16,9 @@ import {
 	NominationPoolsExporter
 } from './exporters';
 import { getParachainLoadHistoryParams } from './utils';
-import { logger } from './logger';
-//import parachains from "./parachains.json";
-//import parachainsList from "../config.json";
-import {
-	DEFAULT_TIMEOUT,
-	getTimeOfBlock,
-	isPalletRequiredByHistoryConfig,
-	getDistanceBetweenBlocks
-} from './utils';
+import { logger } from "./logger";
+import { DEFAULT_TIMEOUT, getTimeOfBlock, isPalletRequiredByHistoryConfig, getDistanceBetweenBlocks } from './utils'
+import { hexAddPrefix } from "@polkadot/util";
 
 config();
 const configFullPath = process.env.CONFIG_FULL_PATH;
@@ -34,8 +28,8 @@ const parachainsList = JSON.parse(parachainsListRaw);
 
 const parachains = parachainsList.rpcs;
 
-//number of threads to run per parachain historical loading
-const THREADS = 5;
+//number of threads to run per parachain historical loading 
+const THREADS = 2;
 
 logger.debug(`Threads per exporter ${THREADS}`);
 
@@ -71,15 +65,18 @@ async function main() {
 			];
 
 			for (let chain of parachains) {
+
 				logger.info(`connecting to chain ${chain}`);
 				const provider = new WsProvider(chain, 1000, {}, DEFAULT_TIMEOUT);
 				const api = await ApiPromise.create({ provider });
-				const chainName = await (await api.rpc.system.chain()).toString();
+
+				await api.isReady;
+
+				const chainName = (await api.rpc.system.chain()).toString();
 
 				let [distanceBetweenBlocks, startingBlock, endingBlock, pallets] =
 					getParachainLoadHistoryParams(chain);
 				distanceBetweenBlocks = distanceBetweenBlocks.valueOf();
-				//gilles removed valueof
 				startingBlock = startingBlock;
 				endingBlock = endingBlock;
 				const palletsArr = pallets.split(',');

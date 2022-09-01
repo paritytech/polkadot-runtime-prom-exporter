@@ -6,8 +6,6 @@ import { Header } from '@polkadot/types/interfaces';
 import { Balances } from '../workers/balancesWorker';
 import { BALANCE_WORKER_PATH } from '../workers/workersPaths';
 
-const Sequelize = require('sequelize');
-
 class BalancesExporter extends Balances implements Exporter {
 	palletIdentifier: any;
 	exporterVersion: number;

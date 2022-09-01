@@ -1,10 +1,9 @@
-import BN from 'bn.js';
-import { ApiDecoration } from '@polkadot/api/types';
-//import parachainsHistory from './config.json'
-import parachainsids from './parachains-ids.json';
-import { logger } from './logger';
-import { ApiPromise } from '@polkadot/api';
-import { config } from 'dotenv';
+import BN from "bn.js";
+import { ApiDecoration } from "@polkadot/api/types";
+import parachainsids from "./parachains-ids.json";
+import { logger } from "./logger";
+import { ApiPromise } from "@polkadot/api";
+import { config } from "dotenv";
 
 config();
 const configFullPath = process.env.CONFIG_FULL_PATH;
@@ -42,9 +41,15 @@ export async function getTimeOfBlock(api: ApiDecoration<'promise'>, blockHash: s
 
 export function decimals(api: ApiDecoration<'promise'>): BN {
 	try {
-		return new BN(Math.pow(10, api.registry.chainDecimals[0]));
-	} catch (error) {
-		logger.debug(`function decimals error ${error}`);
+		if (api.registry.chainDecimals.length != 0) {		
+			return new BN(10).pow(new BN( api.registry.chainDecimals[0]))
+		}
+		else {
+			return new BN(0);
+		}
+	}
+	catch (error) {
+		logger.debug(`function decimals error ${error}`)
 
 		return new BN(0);
 	}
@@ -93,11 +98,13 @@ export function getParachainLoadHistoryParams(chain: string) {
 			i++;
 		}
 
-		logger.debug(`no parachain settings for chain ${chain} config.json`);
-		return [{}, 0, 0, ''] as const;
+		logger.debug(`no historical parachain settings for chain ${chain} config.json`);
+		return [{}, 0, 0, ""] as const;
+
 	} else {
-		logger.debug(`no parachain settings for chain ${chain} config.json`);
-		return [{}, 0, 0, ''] as const;
+		logger.debug(`no historical parachain settings for chain ${chain} config.json`);
+		return [{}, 0, 0, ""] as const;
+
 	}
 }
 
