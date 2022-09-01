@@ -28,7 +28,7 @@ A minimum of one database is required, and it's up to you to install both Promet
 
 **Yarn** is required for the installation.
 
-#### Promtheus: 
+#### Prometheus: 
 https://prometheus.io/docs/prometheus/latest/installation/
 
 Once Prometheus installed, go to the root of your runtime exporter folder and run this command :
@@ -595,7 +595,7 @@ As we remember that the doWork function is called both for the real time data, a
 
 
 That's it for the code.
-We also want to create the database, which needs to be done externally with your preferred database tool:
+We also want to create the table in the timescaledb database, which needs to be done externally with your preferred database tool:
 
 ```sql
 CREATE TABLE IF NOT EXISTS runtime_balance_a (
@@ -731,5 +731,3 @@ The principle of multi-threading in our case, is to let every thread loading a c
 For example, if the startingBlock is 1000000 and the ending block is 900000(see config.json), and the number of threads is 5, then thread #1 will take charge of blocks 1000000-980000, thread 2, 980000-960000, etc...
 
 When all the workers have finished, a new record in the exporters_versions table will be added, which will testify that a new historical record was added for this specific Exporter.
-
-

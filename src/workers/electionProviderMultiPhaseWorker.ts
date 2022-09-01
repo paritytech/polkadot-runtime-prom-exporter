@@ -183,7 +183,6 @@ export class ElectionProviderMultiPhase extends CTimeScaleExporter {
 
         try {
             const blockHash = await api.rpc.chain.getBlockHash(indexBlock);
-
             const signed_block = await api.rpc.chain.getBlock(blockHash);
 
             const timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();

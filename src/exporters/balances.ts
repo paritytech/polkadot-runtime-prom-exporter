@@ -6,8 +6,6 @@ import { Header } from "@polkadot/types/interfaces";
 import { Balances } from '../workers/balancesWorker'
 import { BALANCE_WORKER_PATH } from '../workers/workersPaths'
 
-const Sequelize = require('sequelize');
-
 class BalancesExporter extends Balances implements Exporter {
     palletIdentifier: any;
     exporterVersion: number;
@@ -17,6 +15,7 @@ class BalancesExporter extends Balances implements Exporter {
 
     constructor(registry: PromClient.Registry) {
         //worker needs .js 
+        //we set to true withProm, meaning that the real time  metric will be stored on prometheus
         super(BALANCE_WORKER_PATH, registry, true);
         this.registry = registry;
         this.palletIdentifier = "balances";
@@ -48,4 +47,3 @@ class BalancesExporter extends Balances implements Exporter {
 }
 
 export { BalancesExporter };
-

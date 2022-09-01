@@ -239,10 +239,8 @@ export class NominationPools extends CTimeScaleExporter {
 
         const blockHash = await api.rpc.chain.getBlockHash(indexBlock);
         const apiAt = await api.at(blockHash);
-        //const timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();
+        const timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();
         
-        const timestamp = (await apiAt.query.timestamp.now()).toNumber();
-
         function createAccount( palletId: Uint8Array, poolId: BN, index: number): AccountId32 {
             const EMPTY_H256 = new Uint8Array(32);
             const MOD_PREFIX = stringToU8a('modl');
@@ -255,10 +253,12 @@ export class NominationPools extends CTimeScaleExporter {
                 EMPTY_H256
             ));
         }
+        //can be done on every block
         // count of all nomination pools.
         const poolsCount = await apiAt.query.nominationPools.counterForBondedPools();
         // count of all members.
         const membersCount = await apiAt.query.nominationPools.counterForPoolMembers();
+
         // details of each pool, [{ poolId, memberCount, totalPoints, totalStake, unbondingStake pendingRewards }]
         const PoolsDetail = await Promise.all((await apiAt.query.nominationPools.bondedPools.entries()).map(async ([key, bondedPool]) => {
             const poolId = key.args[0];

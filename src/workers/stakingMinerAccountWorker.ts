@@ -115,7 +115,6 @@ export class StakingMinerAccount extends CTimeScaleExporter {
         const apiAt = await api.at(blockHash);
         let timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();
 
-
         try {
             let balanceA = (await apiAt.query.system.account(BALANCE_A_ADDRESS));
             let balanceB = (await apiAt.query.system.account(BALANCE_B_ADDRESS));

@@ -77,7 +77,6 @@ export class CTimeScaleExporter {
 					if (completedWorkers == threadsNumber) {
 						logger.debug(`all finished for worker ${this.workerPath} ${chainName}`)
 						if (checkRecord == false) {
-							console.log('', chainName, exporterName, exporterVersion, startingBlock, endingBlock);
 							this.writeExporterRecord(this.exportersVersionsSql, chainName, exporterName, exporterVersion, startingBlock, endingBlock, distanceBB);
 						}
 						else {
@@ -106,7 +105,6 @@ export class CTimeScaleExporter {
 		//before storing the new record, we delete previous versions if there are, for the same exporter with same startingBlock and endingBlock 
 		await this.cleanPreviousExporterRecord(this.exportersVersionsSql, myChainName, myExporter, startingBlock, endingBlock);
 
-		console.log('distancebb before storage', distanceBB)
 		//write to the exporters_versions table when finished 
 		const result = this.exportersVersionsSql.create(
 			{

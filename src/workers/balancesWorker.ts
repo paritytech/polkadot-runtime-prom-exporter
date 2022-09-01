@@ -30,7 +30,7 @@ export class Balances extends CTimeScaleExporter {
             this.balancesSql = sequelize.define("runtime_total_issuance", {
                 time: { type: Sequelize.DATE, primaryKey: true },
                 chain: { type: Sequelize.STRING, primaryKey: true },
-                issuance: { type: Sequelize.INTEGER },
+                issuance: { type: Sequelize.BIGINT },
             }, { timestamps: false, freezeTableName: true });
         }
         if (this.withProm) {
