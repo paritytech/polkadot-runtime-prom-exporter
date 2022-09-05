@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import JSON5 from 'json5'
 import { ApiDecoration } from "@polkadot/api/types";
 import parachainsids from "./parachains-ids.json";
 import { logger } from "./logger";
@@ -9,7 +10,7 @@ config();
 const configFullPath = process.env.CONFIG_FULL_PATH;
 const fs = require('fs');
 let parachainsHistoryRaw = fs.readFileSync(configFullPath);
-let parachainsHistory = JSON.parse(parachainsHistoryRaw);
+let parachainsHistory = JSON5.parse(parachainsHistoryRaw);
 
 const parachainsLoadHistory = parachainsHistory.history;
 

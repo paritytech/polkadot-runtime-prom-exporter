@@ -1,33 +1,51 @@
 {
-	"rpcs": ["wss://rpc.polkadot.io", "wss://kusama-rpc.polkadot.io"],
-	"history": [
-		{
-			"chain": "wss://rpc.polkadot.io",
-			"startingBlock": 11512045,
-			"endingBlock": 11412045,
-			"pallets": "balances",
-			"distanceBetweenBlocks": [
-				{
-					"pallet": "balances",
-					"dist": 600
-				},
-				{
-					"pallet": "nominationPools",
-					"dist": 6000
-				}
-			]
-		},
-		{
-			"chain": "wss://kusama-rpc.polkadot.io",
-			"startingBlock": 13951344,
-			"endingBlock": 13950344,
-			"pallets": "system,nominationPools",
-			"distanceBetweenBlocks": [
-				{
-					"pallet": "nominationPools",
-					"dist": 6000
-				}
-			]
-		}
-	]
+  "rpcs": [
+    // Polkadot + Parachains RPCs
+    "wss://rpc.polkadot.io",
+    "wss://statemint-rpc.polkadot.io",
+    "'wss://acala-rpc-0.aca-api.network",
+    "wss://wss.odyssey.aresprotocol.io",
+    "wss://rpc.astar.network",
+    "wss://hk.p.bifrost-rpc.liebi.com/ws",
+    "wss://fullnode.parachain.centrifuge.io",
+    "wss://rpc-para.clover.finance",
+    "wss://rpc.coinversation.io/",
+    "wss://rpc.composable.finance",
+    "wss://rpc.crust.network",
+    "wss://parachain-rpc.darwinia.network",
+    "wss://rpc.efinity.io",
+    "wss://node.pol.equilibrium.io/",
+    "wss://rpc.geminis.network",
+    "wss://hydradx-rpc.dwellir.com",
+    "wss://polkadot.api.integritee.network",
+    "wss://api.interlay.io/parachain",
+    "wss://k-ui.kapex.network",
+    "wss://pichiu.api.onfinality.io/public-ws",
+    "wss://litentry-rpc.dwellir.com",
+    "wss://wss.api.moonbeam.network",
+    "wss://nodle-parachain.api.onfinality.io/public-ws",
+    "wss://omnibtc.io/ws",
+    "wss://parachain-rpc.origin-trail.network",
+    "wss://rpc.parallel.fi",
+    "wss://api.phala.network/ws",
+    "wss://parachain-rpc.subdao.org",
+    "wss://gamma.subgame.org/",
+    "wss://eu-ws.unique.network"
+  ],
+  /*"history": [
+    {
+        "chain": "wss://rpc.polkadot.io",
+        "startingBlock": 11512045,
+        "endingBlock": 11412045,
+        "pallets": "balances",
+        "distanceBetweenBlocks": [{
+                "pallet": "balances",
+                "dist": 600
+            },
+            {
+                "pallet": "nominationPools",
+                "dist": 6000
+            }]
+    }
+  ]*/
 }
