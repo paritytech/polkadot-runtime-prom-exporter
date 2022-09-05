@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS pallets_methods_calls (
   calls INTEGER NULL
 );
 
-CREATE TABLE IF NOT EXISTS IF NOT EXISTS runtime_total_issuance (
+CREATE TABLE IF NOT EXISTS runtime_total_issuance (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
   issuance INTEGER NOT NULL
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS runtime_balance_b (
 CREATE TABLE IF NOT EXISTS runtime_xcm_transfers (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  transferamount DOUBLE NOT NULL
+  transferamount DOUBLE PRECISION NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS chain_finalized_number (
@@ -121,11 +121,13 @@ CREATE TABLE IF NOT EXISTS runtime_nom_pools_total_points (
   chain TEXT NOT NULL,
   totalpoints BIGINT NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_total_balance (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
   totalbalance BIGINT NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_unbonding_balance (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
@@ -137,4 +139,3 @@ CREATE TABLE IF NOT EXISTS runtime_nom_pools_pending_rewards (
   chain TEXT NOT NULL,
   pendingrewards BIGINT NOT NULL
 );
-
