@@ -20,7 +20,7 @@ blob/${VCS_REF}/README.md" \
 WORKDIR /usr/src/polkadot-prom-exporter
 
 # copy and install deps
-COPY package*.json ./
+COPY package*.json yarn.lock ./
 RUN yarn
 
 # copy source and build it
