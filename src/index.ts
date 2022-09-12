@@ -3,6 +3,7 @@ import "@polkadot/api-augment";
 import * as PromClient from "prom-client"
 import * as http from "http";
 import { config } from "dotenv";
+import JSON5 from 'json5'
 import { SystemExporter, BalancesExporter, XCMTransfersExporter, StakingMinerAccountExporter, TransactionPaymentExporter, StakingExporter, PalletsMethodsExporter, ElectionProviderMultiPhaseExporter, TimestampExporter, NominationPoolsExporter } from "./exporters";
 import { getParachainLoadHistoryParams } from './utils';
 import { logger } from "./logger";
@@ -13,7 +14,7 @@ config();
 const configFullPath = process.env.CONFIG_FULL_PATH
 const fs = require('fs');
 let parachainsListRaw = fs.readFileSync(configFullPath);
-const parachainsList = JSON.parse(parachainsListRaw);
+const parachainsList = JSON5.parse(parachainsListRaw);
 
 const parachains = parachainsList.rpcs;
 
