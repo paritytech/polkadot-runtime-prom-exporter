@@ -5,6 +5,7 @@ import * as PromClient from "prom-client"
 import { CTimeScaleExporter } from './CTimeScaleExporter';
 import { XCM_TRANSFERS_WORKER_PATH } from './workersPaths'
 import { launchLoading } from './LoadHistory'
+import { BN } from "@polkadot/util";
 
 config();
 const connectionString = process.env.TSDB_CONN || "";
@@ -176,16 +177,26 @@ export class System extends CTimeScaleExporter {
         let timestamp = (await api.query.timestamp.now.at(blockHash)).toNumber();
 
         await exporter.writeFinalizedNumber(timestamp, chainName.toString(), indexBlock, exporter.withProm);
-
         const weight = await apiAt.query.system.blockWeight();
-        await exporter.writeWeight(timestamp, chainName.toString(), weight.normal.toNumber(), "normal", exporter.withProm);
-        await exporter.writeWeight(timestamp, chainName.toString(), weight.operational.toNumber(), "operational", exporter.withProm);
-        await exporter.writeWeight(timestamp, chainName.toString(), weight.mandatory.toNumber(), "mandatory", exporter.withProm);
 
+        try {
+
+            await exporter.writeWeight(timestamp, chainName.toString(), weight.normal.toNumber(), "normal", exporter.withProm);
+            await exporter.writeWeight(timestamp, chainName.toString(), weight.operational.toNumber(), "operational", exporter.withProm);
+            await exporter.writeWeight(timestamp, chainName.toString(), weight.mandatory.toNumber(), "mandatory", exporter.withProm);
+        } catch (error) {
+            //take care of v2 response format
+            const normal = JSON.parse(weight.normal.toString());
+            const operational = JSON.parse(weight.operational.toString());
+            const mandatory = JSON.parse(weight.mandatory.toString());
+            
+            await exporter.writeWeight(timestamp, chainName.toString(), normal.refTime, "normal", exporter.withProm);
+            await exporter.writeWeight(timestamp, chainName.toString(), operational.refTime, "operational", exporter.withProm);
+            await exporter.writeWeight(timestamp, chainName.toString(), mandatory.refTime, "mandatory", exporter.withProm);
+
+        }
         const block = await api.rpc.chain.getBlock(blockHash);
-
         await exporter.writeBlockLengthBytes(timestamp, chainName.toString(), block.block.encodedLength, exporter.withProm);
-
         const versionDetails = await apiAt.query.system.lastRuntimeUpgrade();
         const obj = JSON.parse(versionDetails.toString());
         await exporter.writeVersion(timestamp, chainName.toString(), obj.specVersion, obj.specName, exporter.withProm);
