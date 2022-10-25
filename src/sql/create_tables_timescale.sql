@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS pallets_methods_calls (
 CREATE TABLE IF NOT EXISTS IF NOT EXISTS runtime_total_issuance (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  issuance INTEGER NOT NULL
+  issuance BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS runtime_timestamp_seconds (
@@ -104,37 +104,47 @@ CREATE TABLE IF NOT EXISTS exporters_versions (
   version INTEGER NULL
 );
 
-CREATE TABLE IF NOT EXISTS runtime_nom_pools_pool_id (
-  time TIMESTAMPTZ NOT NULL,
-  chain TEXT NOT NULL,
-  poolid INTEGER NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_members (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  members INTEGER NOT NULL
+  members INTEGER NOT NULL,
+  pool INTEGER NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_total_points (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  totalpoints BIGINT NOT NULL
+  totalpoints BIGINT NOT NULL,
+  pool INTEGER NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_total_balance (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  totalbalance BIGINT NOT NULL
+  totalbalance BIGINT NOT NULL,
+  pool INTEGER NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_unbonding_balance (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  unbondingbalance BIGINT NOT NULL
+  unbondingbalance BIGINT NOT NULL,
+  pool INTEGER NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS runtime_nom_pools_pending_rewards (
   time TIMESTAMPTZ NOT NULL,
   chain TEXT NOT NULL,
-  pendingrewards BIGINT NOT NULL
+  pendingrewards BIGINT NOT NULL,
+  pool INTEGER NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_count (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  poolscount INTEGER  NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS runtime_nom_pools_members_count (
+  time TIMESTAMPTZ NOT NULL,
+  chain TEXT NOT NULL,
+  memberscount INTEGER  NOT NULL DEFAULT 0
+);
